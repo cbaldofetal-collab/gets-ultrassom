@@ -48,5 +48,5 @@ export const PRENATAL_EXAMS: ExamDefinition[] = [
     }
 ]
 
-export const CLINIC_WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5511999999999'
+export const CLINIC_WHATSAPP = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5511913561616'
 export const CLINIC_NAME = process.env.NEXT_PUBLIC_CLINIC_NAME || 'Clínica FMFLA'
