@@ -1,4 +1,4 @@
-import { CLINIC_WHATSAPP_NUMBER } from '@/lib/constants/exams'
+import { CLINIC_WHATSAPP } from '@/lib/constants/exams'
 
 /**
  * Gera link do WhatsApp com mensagem pré-formatada
@@ -6,7 +6,7 @@ import { CLINIC_WHATSAPP_NUMBER } from '@/lib/constants/exams'
 export function generateWhatsAppLink(userName: string, examTitle: string): string {
     const message = `Olá! Sou ${userName}. Gostaria de agendar o exame: *${examTitle}*.`
     const encodedMessage = encodeURIComponent(message)
-    return `https://wa.me/${CLINIC_WHATSAPP_NUMBER}?text=${encodedMessage}`
+    return `https://wa.me/${CLINIC_WHATSAPP}?text=${encodedMessage}`
 }
 
 /**
