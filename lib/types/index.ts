@@ -47,4 +47,6 @@ export interface ExamInstance extends ExamDefinition {
     scheduled_date?: Date
     completed_date?: Date
     record_id?: string
+    file_path?: string // Caminho no Storage
+    file_url?: string // URL pública para visualização
 }

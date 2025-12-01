@@ -7,15 +7,18 @@ import { UserProfile, ExamInstance, ExamStatus } from '@/lib/types'
 import { PRENATAL_EXAMS, CLINIC_NAME } from '@/lib/constants/exams'
 import { calculateExamWindowStart, calculateExamWindowEnd, formatDate, isInIdealWindow, isWindowPassed } from '@/lib/utils/dateUtils'
 import { openWhatsApp } from '@/lib/utils/whatsapp'
-import { HeartPulse, LogOut, Calendar as CalendarIcon, CheckCircle2, MessageCircle } from 'lucide-react'
+import { HeartPulse, LogOut, Calendar as CalendarIcon, CheckCircle2, MessageCircle, Paperclip } from 'lucide-react'
 import { WEEKLY_TIPS } from '@/lib/constants/tips'
 import { WeeklyTipCard } from '@/components/WeeklyTipCard'
+import { ExamUploadModal } from '@/components/ExamUploadModal'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<UserProfile | null>(null)
   const [timeline, setTimeline] = useState<ExamInstance[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [uploadModalOpen, setUploadModalOpen] = useState(false)
+  const [selectedExam, setSelectedExam] = useState<ExamInstance | null>(null)
 
   useEffect(() => {
     loadUserData()
@@ -83,6 +86,9 @@ export default function DashboardPage() {
           if (record.completed_date) {
             exams[examIndex].completed_date = new Date(record.completed_date)
           }
+          if (record.file_path) {
+            exams[examIndex].file_path = record.file_path
+          }
         }
       })
     }
@@ -125,6 +131,11 @@ export default function DashboardPage() {
     if (user) {
       openWhatsApp(user.name, examTitle)
     }
+  }
+
+  const handleOpenUpload = (exam: ExamInstance) => {
+    setSelectedExam(exam)
+    setUploadModalOpen(true)
   }
 
   const handleLogout = async () => {
@@ -219,11 +230,28 @@ export default function DashboardPage() {
                 exam={exam}
                 onMarkComplete={handleMarkComplete}
                 onSchedule={handleSchedule}
+                onUpload={handleOpenUpload}
               />
             ))}
           </div>
         </div>
       </main>
+
+      {/* Upload Modal */}
+      {selectedExam && (
+        <ExamUploadModal
+          isOpen={uploadModalOpen}
+          onClose={() => {
+            setUploadModalOpen(false)
+            setSelectedExam(null)
+          }}
+          examId={selectedExam.id}
+          examTitle={selectedExam.title}
+          onUploadComplete={() => {
+            loadUserData()
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -232,9 +260,10 @@ interface ExamCardProps {
   exam: ExamInstance
   onMarkComplete: (examId: string) => void
   onSchedule: (examTitle: string) => void
+  onUpload: (exam: ExamInstance) => void
 }
 
-function ExamCard({ exam, onMarkComplete, onSchedule }: ExamCardProps) {
+function ExamCard({ exam, onMarkComplete, onSchedule, onUpload }: ExamCardProps) {
   const statusColors = {
     [ExamStatus.COMPLETED]: 'bg-green-50 border-green-200',
     [ExamStatus.SCHEDULED]: 'bg-blue-50 border-blue-200',
@@ -274,7 +303,15 @@ function ExamCard({ exam, onMarkComplete, onSchedule }: ExamCardProps) {
         </p>
       )}
 
-      <div className="flex gap-2">
+      {/* File Indicator */}
+      {exam.file_path && (
+        <div className="mb-3 flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
+          <Paperclip className="w-4 h-4" />
+          <span className="font-medium">Documento anexado</span>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
         {exam.status !== ExamStatus.COMPLETED && (
           <button
             onClick={() => onSchedule(exam.title)}
@@ -284,6 +321,14 @@ function ExamCard({ exam, onMarkComplete, onSchedule }: ExamCardProps) {
             Agendar via WhatsApp
           </button>
         )}
+
+        <button
+          onClick={() => onUpload(exam)}
+          className="flex items-center justify-center gap-2 bg-blue-500 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-blue-600 transition"
+        >
+          <Paperclip className="w-4 h-4" />
+          {exam.file_path ? 'Trocar' : 'Anexar'}
+        </button>
 
         <button
           onClick={() => onMarkComplete(exam.id)}
