@@ -7,8 +7,9 @@ import { UserProfile, ExamInstance, ExamStatus } from '@/lib/types'
 import { PRENATAL_EXAMS, CLINIC_NAME } from '@/lib/constants/exams'
 import { calculateExamWindowStart, calculateExamWindowEnd, formatDate, isInIdealWindow, isWindowPassed } from '@/lib/utils/dateUtils'
 import { openWhatsApp } from '@/lib/utils/whatsapp'
-import { HeartPulse, LogOut, Calendar as CalendarIcon, CheckCircle2, Clock, MessageCircle } from 'lucide-react'
-import Link from 'next/link'
+import { HeartPulse, LogOut, Calendar as CalendarIcon, CheckCircle2, MessageCircle } from 'lucide-react'
+import { WEEKLY_TIPS } from '@/lib/constants/tips'
+import { WeeklyTipCard } from '@/components/WeeklyTipCard'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -22,9 +23,9 @@ export default function DashboardPage() {
 
   const loadUserData = async () => {
     const supabase = createClient()
-    
+
     const { data: { user: authUser } } = await supabase.auth.getUser()
-    
+
     if (!authUser) {
       router.push('/login')
       return
@@ -47,7 +48,7 @@ export default function DashboardPage() {
     const exams: ExamInstance[] = PRENATAL_EXAMS.map(exam => {
       const windowStart = calculateExamWindowStart(profile.last_menstrual_period, exam.start_week)
       const windowEnd = calculateExamWindowEnd(profile.last_menstrual_period, exam.end_week)
-      
+
       let status: ExamStatus = ExamStatus.PENDING
       if (isInIdealWindow(profile.weeks_pregnant, exam.start_week, exam.end_week)) {
         status = ExamStatus.PENDING
@@ -102,7 +103,7 @@ export default function DashboardPage() {
       // Atualizar existente
       await supabase
         .from('exam_records')
-        .update({ 
+        .update({
           status: ExamStatus.COMPLETED,
           completed_date: new Date().toISOString().split('T')[0]
         })
@@ -149,6 +150,9 @@ export default function DashboardPage() {
 
   const completedCount = timeline.filter(e => e.status === ExamStatus.COMPLETED).length
   const progressPercentage = Math.round((completedCount / timeline.length) * 100)
+
+  // Pegar a dica da semana atual
+  const currentTip = WEEKLY_TIPS[user.weeks_pregnant] || WEEKLY_TIPS[40] || WEEKLY_TIPS[4]
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -201,6 +205,9 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
+
+        {/* Dica da Semana */}
+        {currentTip && <WeeklyTipCard tip={currentTip} />}
 
         {/* Timeline */}
         <div>
@@ -277,7 +284,7 @@ function ExamCard({ exam, onMarkComplete, onSchedule }: ExamCardProps) {
             Agendar via WhatsApp
           </button>
         )}
-        
+
         <button
           onClick={() => onMarkComplete(exam.id)}
           disabled={exam.status === ExamStatus.COMPLETED}
