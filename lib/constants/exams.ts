@@ -29,22 +29,40 @@ export const PRENATAL_EXAMS: ExamDefinition[] = [
         order: 3
     },
     {
-        id: 'us_obstetrico_3',
-        title: 'Ultrassom Obstétrico + Doppler',
-        description: 'Avaliação do crescimento, peso fetal e bem-estar (fluxo sanguíneo).',
+        id: 'us_eco_fetal',
+        title: 'Ecocardiografia Fetal com Doppler Colorido',
+        description: 'Avaliação detalhada do coração do bebê e seu funcionamento.',
         start_week: 28,
-        end_week: 32,
-        preparation: 'Comer algo doce (ex: chocolate) 20 minutos antes pode ajudar o bebê a se mexer.',
+        end_week: 29,
+        preparation: 'Nenhum preparo específico.',
         order: 4
     },
     {
-        id: 'us_final',
-        title: 'Ultrassom Final (Termo)',
-        description: 'Verificação da posição do bebê e condições para o parto.',
+        id: 'us_obs_28_3d',
+        title: 'Obstétrico com Doppler, 3D/4D e 8K',
+        description: 'Avaliação do crescimento com tecnologia de alta definição (3D/4D/8K) para ver o rostinho.',
+        start_week: 28,
+        end_week: 29,
+        preparation: 'Comer algo doce 20 minutos antes ajuda o bebê a se mexer para as imagens.',
+        order: 5
+    },
+    {
+        id: 'us_obs_32',
+        title: 'Ultrassom Obstétrico com Doppler Colorido',
+        description: 'Avaliação do crescimento, peso e vitalidade fetal (fluxos sanguíneos).',
+        start_week: 32,
+        end_week: 33,
+        preparation: 'Nenhum preparo específico.',
+        order: 6
+    },
+    {
+        id: 'us_obs_36',
+        title: 'Ultrassom Obstétrico com Doppler Colorido',
+        description: 'Avaliação final do crescimento, líquido amniótico e posição para o parto.',
         start_week: 36,
         end_week: 39,
         preparation: 'Nenhum preparo específico.',
-        order: 5
+        order: 7
     }
 ]
 
