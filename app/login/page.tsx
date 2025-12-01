@@ -165,6 +165,17 @@ export default function LoginPage() {
                             </div>
                         </div>
 
+                        {!isSignUp && (
+                            <div className="flex justify-end">
+                                <Link
+                                    href="/recuperar-senha"
+                                    className="text-sm text-primary hover:text-primary/80 transition font-medium"
+                                >
+                                    Esqueci minha senha
+                                </Link>
+                            </div>
+                        )}
+
                         <button
                             type="submit"
                             disabled={isLoading}
