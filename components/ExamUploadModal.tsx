@@ -14,6 +14,7 @@ interface ExamUploadModalProps {
 
 export function ExamUploadModal({ isOpen, onClose, examId, examTitle, onUploadComplete }: ExamUploadModalProps) {
     const [isUploading, setIsUploading] = useState(false)
+    const [errorMessage, setErrorMessage] = useState('')
     const fileInputRef = useRef<HTMLInputElement>(null)
 
     if (!isOpen) return null
@@ -23,24 +24,38 @@ export function ExamUploadModal({ isOpen, onClose, examId, examTitle, onUploadCo
         if (!file) return
 
         setIsUploading(true)
+        setErrorMessage('')
         const supabase = createClient()
 
         try {
+            console.log('🔍 Iniciando upload...')
+
             const { data: { user } } = await supabase.auth.getUser()
-            if (!user) throw new Error('Usuário não autenticado')
+            if (!user) {
+                throw new Error('Você precisa estar logado para fazer upload')
+            }
+            console.log('✅ Usuário autenticado:', user.id)
 
             // 1. Upload do arquivo para o Storage
             const fileExt = file.name.split('.').pop()
             const fileName = `${user.id}/${examId}_${Date.now()}.${fileExt}`
 
+            console.log('📤 Enviando arquivo para o Storage:', fileName)
+
             const { error: uploadError } = await supabase.storage
                 .from('exams')
                 .upload(fileName, file)
 
-            if (uploadError) throw uploadError
+            if (uploadError) {
+                console.error('❌ Erro no Storage:', uploadError)
+                throw new Error(`Erro ao enviar arquivo: ${uploadError.message}`)
+            }
+
+            console.log('✅ Arquivo enviado com sucesso!')
 
             // 2. Salvar referência no banco de dados (exam_records)
-            // Primeiro verificamos se já existe um registro para este exame
+            console.log('💾 Salvando no banco de dados...')
+
             const { data: existingRecord } = await supabase
                 .from('exam_records')
                 .select('id')
@@ -49,31 +64,45 @@ export function ExamUploadModal({ isOpen, onClose, examId, examTitle, onUploadCo
                 .single()
 
             if (existingRecord) {
-                // Atualiza registro existente com o caminho do arquivo
-                await supabase
+                console.log('📝 Atualizando registro existente...')
+                const { error: updateError } = await supabase
                     .from('exam_records')
                     .update({
                         file_path: fileName,
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', existingRecord.id)
+
+                if (updateError) {
+                    console.error('❌ Erro ao atualizar:', updateError)
+                    throw new Error(`Erro ao salvar: ${updateError.message}`)
+                }
             } else {
-                // Cria novo registro
-                await supabase
+                console.log('✨ Criando novo registro...')
+                const { error: insertError } = await supabase
                     .from('exam_records')
                     .insert({
                         user_id: user.id,
                         exam_id: examId,
-                        status: 'PENDING', // Mantém pendente até marcar como feito
+                        status: 'PENDING',
                         file_path: fileName
                     })
+
+                if (insertError) {
+                    console.error('❌ Erro ao inserir:', insertError)
+                    throw new Error(`Erro ao salvar: ${insertError.message}`)
+                }
             }
 
+            console.log('🎉 Upload concluído com sucesso!')
+            alert('✅ Documento anexado com sucesso!')
             onUploadComplete()
             onClose()
-        } catch (error) {
-            console.error('Erro no upload:', error)
-            alert('Erro ao enviar arquivo. Tente novamente.')
+        } catch (error: any) {
+            console.error('❌ Erro completo:', error)
+            const message = error.message || 'Erro desconhecido ao enviar arquivo'
+            setErrorMessage(message)
+            alert(`❌ ${message}`)
         } finally {
             setIsUploading(false)
         }
