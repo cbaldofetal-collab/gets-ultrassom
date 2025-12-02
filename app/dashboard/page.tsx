@@ -11,6 +11,7 @@ import { HeartPulse, LogOut, Calendar as CalendarIcon, CheckCircle2, MessageCirc
 import { WEEKLY_TIPS } from '@/lib/constants/tips'
 import { WeeklyTipCard } from '@/components/WeeklyTipCard'
 import { ExamUploadModal } from '@/components/ExamUploadModal'
+import { FileViewerModal } from '@/components/FileViewerModal'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -19,6 +20,8 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [uploadModalOpen, setUploadModalOpen] = useState(false)
   const [selectedExam, setSelectedExam] = useState<ExamInstance | null>(null)
+  const [viewerModalOpen, setViewerModalOpen] = useState(false)
+  const [viewingFile, setViewingFile] = useState<{ path: string, name: string } | null>(null)
 
   useEffect(() => {
     loadUserData()
@@ -138,6 +141,11 @@ export default function DashboardPage() {
     setUploadModalOpen(true)
   }
 
+  const handleViewFile = (filePath: string, fileName: string) => {
+    setViewingFile({ path: filePath, name: fileName })
+    setViewerModalOpen(true)
+  }
+
   const handleLogout = async () => {
     const supabase = createClient()
     await supabase.auth.signOut()
@@ -231,6 +239,7 @@ export default function DashboardPage() {
                 onMarkComplete={handleMarkComplete}
                 onSchedule={handleSchedule}
                 onUpload={handleOpenUpload}
+                onViewFile={handleViewFile}
               />
             ))}
           </div>
@@ -252,6 +261,19 @@ export default function DashboardPage() {
           }}
         />
       )}
+
+      {/* File Viewer Modal */}
+      {viewingFile && (
+        <FileViewerModal
+          isOpen={viewerModalOpen}
+          onClose={() => {
+            setViewerModalOpen(false)
+            setViewingFile(null)
+          }}
+          filePath={viewingFile.path}
+          fileName={viewingFile.name}
+        />
+      )}
     </div>
   )
 }
@@ -261,9 +283,10 @@ interface ExamCardProps {
   onMarkComplete: (examId: string) => void
   onSchedule: (examTitle: string) => void
   onUpload: (exam: ExamInstance) => void
+  onViewFile: (filePath: string, fileName: string) => void
 }
 
-function ExamCard({ exam, onMarkComplete, onSchedule, onUpload }: ExamCardProps) {
+function ExamCard({ exam, onMarkComplete, onSchedule, onUpload, onViewFile }: ExamCardProps) {
   const statusColors = {
     [ExamStatus.COMPLETED]: 'bg-green-50 border-green-200',
     [ExamStatus.SCHEDULED]: 'bg-blue-50 border-blue-200',
@@ -303,12 +326,16 @@ function ExamCard({ exam, onMarkComplete, onSchedule, onUpload }: ExamCardProps)
         </p>
       )}
 
-      {/* File Indicator */}
+      {/* File Indicator - Now Clickable */}
       {exam.file_path && (
-        <div className="mb-3 flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
+        <button
+          onClick={() => onViewFile(exam.file_path!, exam.title)}
+          className="w-full mb-3 flex items-center gap-2 text-sm text-green-700 bg-green-50 hover:bg-green-100 px-3 py-2 rounded-lg transition border border-green-200 hover:border-green-300"
+        >
           <Paperclip className="w-4 h-4" />
-          <span className="font-medium">Documento anexado</span>
-        </div>
+          <span className="font-medium flex-1 text-left">Documento anexado - Clique para visualizar</span>
+          <span className="text-xs opacity-75">👁️</span>
+        </button>
       )}
 
       <div className="flex flex-wrap gap-2">
