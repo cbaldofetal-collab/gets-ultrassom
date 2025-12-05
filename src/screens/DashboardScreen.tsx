@@ -371,6 +371,11 @@ const styles = StyleSheet.create({
     ...theme.typography.h2,
     color: theme.colors.primaryDark,
   },
+  profileSubtext: {
+    ...theme.typography.caption,
+    color: theme.colors.textSecondary,
+    marginTop: theme.spacing.xs,
+  },
   profileRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
