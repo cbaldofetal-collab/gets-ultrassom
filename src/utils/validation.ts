@@ -2,6 +2,7 @@
 
 import { PregnancyProfile } from '../types';
 import { GESTATION_DURATION_WEEKS } from '../constants';
+import { decimalToWeeksAndDays } from './gestational';
 
 /**
  * Valida se uma data é válida e está em um range razoável
