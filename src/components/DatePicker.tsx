@@ -2,9 +2,18 @@
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { theme } from '../theme';
 import { formatDate } from '../utils/date';
+
+// Importar DateTimePicker apenas em plataformas nativas
+let DateTimePicker: any = null;
+if (Platform.OS !== 'web') {
+  try {
+    DateTimePicker = require('@react-native-community/datetimepicker').default;
+  } catch (e) {
+    console.warn('DateTimePicker não disponível');
+  }
+}
 
 interface DatePickerProps {
   label: string;
@@ -27,6 +36,57 @@ export function DatePicker({
 }: DatePickerProps) {
   const [showPicker, setShowPicker] = useState(false);
 
+  // Para web, usar input HTML nativo
+  if (Platform.OS === 'web') {
+    const handleWebDateChange = (e: any) => {
+      const selectedDate = new Date(e.target.value);
+      onChange(selectedDate);
+    };
+
+    const formatDateForInput = (date: Date | null): string => {
+      if (!date) return '';
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    const getMinDate = (): string => {
+      if (minimumDate) return formatDateForInput(minimumDate);
+      return '';
+    };
+
+    const getMaxDate = (): string => {
+      if (maximumDate) return formatDateForInput(maximumDate);
+      return '';
+    };
+
+    return (
+      <View style={styles.container}>
+        <Text style={styles.label}>{label}</Text>
+        <input
+          type="date"
+          value={formatDateForInput(value)}
+          onChange={handleWebDateChange}
+          min={getMinDate()}
+          max={getMaxDate()}
+          placeholder={placeholder}
+          style={{
+            width: '100%',
+            padding: '12px',
+            borderRadius: '8px',
+            border: `1px solid ${theme.colors.divider}`,
+            fontSize: '16px',
+            fontFamily: 'inherit',
+            backgroundColor: theme.colors.surface,
+            color: theme.colors.text,
+          }}
+        />
+      </View>
+    );
+  }
+
+  // Para plataformas nativas, usar DateTimePicker
   const handleDateChange = (event: any, selectedDate?: Date) => {
     if (Platform.OS === 'android') {
       setShowPicker(false);
@@ -44,6 +104,21 @@ export function DatePicker({
 
   const displayValue = value ? formatDate(value) : placeholder;
 
+  if (!DateTimePicker) {
+    // Fallback se DateTimePicker não estiver disponível
+    return (
+      <View style={styles.container}>
+        <Text style={styles.label}>{label}</Text>
+        <View style={[styles.input, !value && styles.inputPlaceholder]}>
+          <Text style={[styles.inputText, !value && styles.inputTextPlaceholder]}>
+            {displayValue}
+          </Text>
+          <Text style={styles.calendarIcon}>📅</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.label}>{label}</Text>
@@ -57,7 +132,7 @@ export function DatePicker({
         <Text style={styles.calendarIcon}>📅</Text>
       </TouchableOpacity>
 
-      {showPicker && (
+      {showPicker && DateTimePicker && (
         <DateTimePicker
           value={value || new Date()}
           mode={mode}
