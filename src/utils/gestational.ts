@@ -4,16 +4,36 @@ import { GESTATION_DURATION_WEEKS, DAYS_PER_WEEK } from '../constants';
 import { PregnancyProfile } from '../types';
 
 /**
- * Calcula a idade gestacional (em semanas) a partir da DUM
+ * Calcula a idade gestacional (em semanas com decimais para dias) a partir da DUM
  */
-export function calculateGestationalAgeFromLMP(lastMenstrualPeriod: Date): number {
-  const today = new Date();
+export function calculateGestationalAgeFromLMP(lastMenstrualPeriod: Date, referenceDate?: Date): number {
+  const today = referenceDate || new Date();
   const diffTime = today.getTime() - lastMenstrualPeriod.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  const weeks = Math.floor(diffDays / DAYS_PER_WEEK);
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  const weeks = diffDays / DAYS_PER_WEEK;
   
   // Limitar entre 0 e 42 semanas
   return Math.max(0, Math.min(42, weeks));
+}
+
+/**
+ * Calcula a idade gestacional a partir do primeiro ultrassom
+ * Se o ultrassom foi feito em uma data específica com uma idade gestacional conhecida,
+ * calculamos a idade atual baseada na diferença de tempo
+ */
+export function calculateGestationalAgeFromFirstUltrasound(
+  ultrasoundDate: Date,
+  ultrasoundGestationalAge: number,
+  referenceDate?: Date
+): number {
+  const today = referenceDate || new Date();
+  const diffTime = today.getTime() - ultrasoundDate.getTime();
+  const diffDays = diffTime / (1000 * 60 * 60 * 24);
+  const weeksToAdd = diffDays / DAYS_PER_WEEK;
+  const currentAge = ultrasoundGestationalAge + weeksToAdd;
+  
+  // Limitar entre 0 e 42 semanas
+  return Math.max(0, Math.min(42, currentAge));
 }
 
 /**
@@ -49,26 +69,50 @@ export function calculateLMPFromDueDate(dueDate: Date): Date {
 
 /**
  * Atualiza o perfil gestacional com cálculos automáticos
+ * Prioriza o cálculo pelo primeiro ultrassom se disponível (mais preciso)
  */
 export function updatePregnancyProfile(profile: Partial<PregnancyProfile>): PregnancyProfile {
   let gestationalAge = 0;
   let dueDate: Date | undefined;
   let lastMenstrualPeriod: Date | undefined;
+  const today = new Date();
 
-  if (profile.lastMenstrualPeriod) {
+  // Prioridade 1: Primeiro ultrassom (mais preciso)
+  if (profile.firstUltrasoundDate && profile.firstUltrasoundGestationalAge !== undefined) {
+    gestationalAge = calculateGestationalAgeFromFirstUltrasound(
+      profile.firstUltrasoundDate,
+      profile.firstUltrasoundGestationalAge,
+      today
+    );
+    
+    // Calcular DUM e DPP baseado na idade gestacional atual
+    if (profile.lastMenstrualPeriod) {
+      lastMenstrualPeriod = profile.lastMenstrualPeriod;
+      dueDate = calculateDueDateFromLMP(lastMenstrualPeriod);
+    } else {
+      // Estimar DUM baseado na idade gestacional atual
+      lastMenstrualPeriod = new Date(today);
+      lastMenstrualPeriod.setDate(lastMenstrualPeriod.getDate() - Math.floor(gestationalAge * DAYS_PER_WEEK));
+      dueDate = calculateDueDateFromLMP(lastMenstrualPeriod);
+    }
+  }
+  // Prioridade 2: DUM
+  else if (profile.lastMenstrualPeriod) {
     lastMenstrualPeriod = profile.lastMenstrualPeriod;
-    gestationalAge = calculateGestationalAgeFromLMP(lastMenstrualPeriod);
+    gestationalAge = calculateGestationalAgeFromLMP(lastMenstrualPeriod, today);
     dueDate = calculateDueDateFromLMP(lastMenstrualPeriod);
-  } else if (profile.dueDate) {
+  }
+  // Prioridade 3: DPP
+  else if (profile.dueDate) {
     dueDate = profile.dueDate;
     gestationalAge = calculateGestationalAgeFromDueDate(dueDate);
     lastMenstrualPeriod = calculateLMPFromDueDate(dueDate);
-  } else if (profile.gestationalAge !== undefined) {
+  }
+  // Prioridade 4: Idade gestacional direta
+  else if (profile.gestationalAge !== undefined) {
     gestationalAge = profile.gestationalAge;
-    // Se só temos a idade gestacional, precisamos de uma data de referência
-    const today = new Date();
     lastMenstrualPeriod = new Date(today);
-    lastMenstrualPeriod.setDate(lastMenstrualPeriod.getDate() - (gestationalAge * DAYS_PER_WEEK));
+    lastMenstrualPeriod.setDate(lastMenstrualPeriod.getDate() - Math.floor(gestationalAge * DAYS_PER_WEEK));
     dueDate = calculateDueDateFromLMP(lastMenstrualPeriod);
   }
 
@@ -78,13 +122,15 @@ export function updatePregnancyProfile(profile: Partial<PregnancyProfile>): Preg
     lastMenstrualPeriod,
     dueDate,
     gestationalAge,
+    firstUltrasoundDate: profile.firstUltrasoundDate,
+    firstUltrasoundGestationalAge: profile.firstUltrasoundGestationalAge,
     createdAt: profile.createdAt || new Date(),
     updatedAt: new Date(),
   };
 }
 
 /**
- * Formata a idade gestacional para exibição
+ * Formata a idade gestacional para exibição (semanas e dias)
  */
 export function formatGestationalAge(weeks: number): string {
   const fullWeeks = Math.floor(weeks);
@@ -94,5 +140,21 @@ export function formatGestationalAge(weeks: number): string {
     return `${fullWeeks} semanas`;
   }
   return `${fullWeeks} semanas e ${days} dias`;
+}
+
+/**
+ * Converte semanas e dias para semanas decimais
+ */
+export function weeksAndDaysToDecimal(weeks: number, days: number): number {
+  return weeks + (days / DAYS_PER_WEEK);
+}
+
+/**
+ * Converte semanas decimais para semanas e dias
+ */
+export function decimalToWeeksAndDays(weeksDecimal: number): { weeks: number; days: number } {
+  const weeks = Math.floor(weeksDecimal);
+  const days = Math.floor((weeksDecimal - weeks) * DAYS_PER_WEEK);
+  return { weeks, days };
 }
 

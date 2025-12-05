@@ -8,4 +8,5 @@ export * from './ExamFilter';
 export * from './AnimatedCard';
 export * from './AnimatedButton';
 export * from './BabySizeCard';
+export * from './GestationalAgeInput';
 

@@ -48,6 +48,7 @@ export const usePregnancyStore = create<PregnancyState>((set, get) => ({
         const profileData = JSON.parse(stored);
         profileData.lastMenstrualPeriod = profileData.lastMenstrualPeriod ? new Date(profileData.lastMenstrualPeriod) : undefined;
         profileData.dueDate = profileData.dueDate ? new Date(profileData.dueDate) : undefined;
+        profileData.firstUltrasoundDate = profileData.firstUltrasoundDate ? new Date(profileData.firstUltrasoundDate) : undefined;
         profileData.createdAt = new Date(profileData.createdAt);
         profileData.updatedAt = new Date(profileData.updatedAt);
         

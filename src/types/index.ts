@@ -13,7 +13,9 @@ export interface PregnancyProfile {
   userId: string;
   lastMenstrualPeriod?: Date; // DUM
   dueDate?: Date; // DPP
-  gestationalAge: number; // Idade gestacional em semanas
+  gestationalAge: number; // Idade gestacional em semanas (com decimais para dias)
+  firstUltrasoundDate?: Date; // Data do primeiro ultrassom
+  firstUltrasoundGestationalAge?: number; // Idade gestacional no primeiro ultrassom (em semanas com decimais)
   createdAt: Date;
   updatedAt: Date;
 }

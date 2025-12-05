@@ -12,10 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
-import { Card, Button, DatePicker } from '../components';
+import { Card, Button, DatePicker, GestationalAgeInput } from '../components';
 import { useUserStore, usePregnancyStore, useSettingsStore } from '../store';
 import { formatDate, formatDateFull } from '../utils/date';
-import { formatGestationalAge } from '../utils/gestational';
+import { formatGestationalAge, decimalToWeeksAndDays, weeksAndDaysToDecimal } from '../utils/gestational';
 import { ReminderTimeOption } from '../store/useSettingsStore';
 
 export function ProfileScreen() {
@@ -34,6 +34,9 @@ export function ProfileScreen() {
   const [name, setName] = useState(user?.name || '');
   const [lmpDate, setLmpDate] = useState<Date | null>(null);
   const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [ultrasoundDate, setUltrasoundDate] = useState<Date | null>(null);
+  const [ultrasoundWeeks, setUltrasoundWeeks] = useState(0);
+  const [ultrasoundDays, setUltrasoundDays] = useState(0);
 
   useEffect(() => {
     if (user) {
@@ -101,6 +104,29 @@ export function ProfileScreen() {
       Alert.alert('Sucesso', 'Data prevista do parto atualizada!');
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível atualizar a data');
+    }
+  };
+
+  const handleSaveUltrasound = async () => {
+    if (!profile || !ultrasoundDate) {
+      Alert.alert('Atenção', 'Selecione a data do primeiro ultrassom');
+      return;
+    }
+
+    if (ultrasoundWeeks === 0 && ultrasoundDays === 0) {
+      Alert.alert('Atenção', 'Informe a idade gestacional no primeiro ultrassom');
+      return;
+    }
+
+    try {
+      const gestationalAgeDecimal = weeksAndDaysToDecimal(ultrasoundWeeks, ultrasoundDays);
+      await setProfile({
+        firstUltrasoundDate: ultrasoundDate,
+        firstUltrasoundGestationalAge: gestationalAgeDecimal,
+      });
+      Alert.alert('Sucesso', 'Dados do primeiro ultrassom atualizados!');
+    } catch (error) {
+      Alert.alert('Erro', 'Não foi possível atualizar os dados');
     }
   };
 

@@ -227,6 +227,16 @@ export function DashboardScreen() {
               <Text style={styles.profileValue}>
                 {formatGestationalAge(profile.gestationalAge)}
               </Text>
+              {profile.firstUltrasoundDate && (
+                <Text style={styles.profileSubtext}>
+                  📊 Calculado pelo primeiro ultrassom
+                </Text>
+              )}
+              {!profile.firstUltrasoundDate && profile.lastMenstrualPeriod && (
+                <Text style={styles.profileSubtext}>
+                  📅 Calculado pela DUM
+                </Text>
+              )}
             </View>
           </View>
           {profile.dueDate && (
