@@ -60,76 +60,107 @@ export function DatePicker({
     };
 
     useEffect(() => {
-      if (!containerRef.current) return;
+      // Aguardar um pouco para garantir que o DOM esteja pronto
+      const timeoutId = setTimeout(() => {
+        if (!containerRef.current) {
+          console.warn('DatePicker: containerRef não está disponível');
+          return;
+        }
 
-      // Obter o elemento DOM do container
-      const findDOMNode = (node: any): HTMLElement | null => {
-        if (node && node.nodeType === 1) return node;
-        if (node?._nativeNode) return node._nativeNode;
-        if (node?.nativeNode) return node.nativeNode;
-        if (node?._reactInternalInstance?.stateNode) return node._reactInternalInstance.stateNode;
-        if (node?._reactInternalFiber?.stateNode) return node._reactInternalFiber.stateNode;
-        return null;
-      };
-
-      const containerElement = findDOMNode(containerRef.current);
-      if (!containerElement) return;
-
-      // Criar ou obter input
-      let inputElement = inputRef.current;
-      if (!inputElement) {
-        inputElement = document.createElement('input');
-        inputElement.type = 'date';
-        inputRef.current = inputElement;
-
-        // Estilos
-        Object.assign(inputElement.style, {
-          width: '100%',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          border: `1px solid ${theme.colors.divider}`,
-          fontSize: '16px',
-          fontFamily: 'inherit',
-          backgroundColor: theme.colors.surface,
-          color: theme.colors.text,
-          outline: 'none',
-          cursor: 'pointer',
-          boxSizing: 'border-box',
-        });
-
-        // Event listeners
-        inputElement.addEventListener('change', (e: any) => {
-          const selectedDate = new Date(e.target.value);
-          if (!isNaN(selectedDate.getTime())) {
-            onChange(selectedDate);
+        // Obter o elemento DOM do container usando diferentes métodos
+        const findDOMNode = (node: any): HTMLElement | null => {
+          // Tentar diferentes formas de acessar o DOM nativo
+          if (node && node.nodeType === 1) return node;
+          if (node?._nativeNode) return node._nativeNode;
+          if (node?.nativeNode) return node.nativeNode;
+          if (node?._reactInternalInstance?.stateNode) return node._reactInternalInstance.stateNode;
+          if (node?._reactInternalFiber?.stateNode) return node._reactInternalFiber.stateNode;
+          
+          // Tentar usar findNodeHandle do React Native
+          try {
+            const { findNodeHandle } = require('react-native');
+            const handle = findNodeHandle(node);
+            if (handle) {
+              const element = document.querySelector(`[data-reactroot]`)?.querySelector(`[data-reactid="${handle}"]`);
+              if (element) return element as HTMLElement;
+            }
+          } catch (e) {
+            // Ignorar erro
           }
-        });
+          
+          return null;
+        };
 
-        inputElement.addEventListener('focus', () => {
-          if (inputElement) {
-            inputElement.style.borderColor = theme.colors.primary;
+        const containerElement = findDOMNode(containerRef.current);
+        if (!containerElement) {
+          console.warn('DatePicker: não foi possível encontrar o elemento DOM do container');
+          return;
+        }
+
+        // Criar ou obter input
+        let inputElement = inputRef.current;
+        if (!inputElement) {
+          inputElement = document.createElement('input');
+          inputElement.type = 'date';
+          inputRef.current = inputElement;
+
+          // Estilos
+          Object.assign(inputElement.style, {
+            width: '100%',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            border: `1px solid ${theme.colors.divider}`,
+            fontSize: '16px',
+            fontFamily: 'inherit',
+            backgroundColor: theme.colors.surface,
+            color: theme.colors.text,
+            outline: 'none',
+            cursor: 'pointer',
+            boxSizing: 'border-box',
+          });
+
+          // Event listeners
+          const handleChange = (e: any) => {
+            const selectedDate = new Date(e.target.value);
+            if (!isNaN(selectedDate.getTime())) {
+              onChange(selectedDate);
+            }
+          };
+
+          const handleFocus = () => {
+            if (inputElement) {
+              inputElement.style.borderColor = theme.colors.primary;
+            }
+          };
+
+          const handleBlur = () => {
+            if (inputElement) {
+              inputElement.style.borderColor = theme.colors.divider;
+            }
+          };
+
+          inputElement.addEventListener('change', handleChange);
+          inputElement.addEventListener('focus', handleFocus);
+          inputElement.addEventListener('blur', handleBlur);
+
+          // Adicionar ao container
+          try {
+            containerElement.appendChild(inputElement);
+          } catch (e) {
+            console.error('DatePicker: erro ao adicionar input ao container:', e);
           }
-        });
+        }
 
-        inputElement.addEventListener('blur', () => {
-          if (inputElement) {
-            inputElement.style.borderColor = theme.colors.divider;
-          }
-        });
-
-        // Adicionar ao container
-        containerElement.appendChild(inputElement);
-      }
-
-      // Atualizar valores
-      if (inputElement) {
-        inputElement.value = formatDateForInput(value);
-        inputElement.min = getMinDate();
-        inputElement.max = getMaxDate();
-      }
+        // Atualizar valores
+        if (inputElement) {
+          inputElement.value = formatDateForInput(value);
+          inputElement.min = getMinDate();
+          inputElement.max = getMaxDate();
+        }
+      }, 100);
 
       return () => {
-        // Não remover o input para evitar problemas de re-renderização
+        clearTimeout(timeoutId);
       };
     }, [value, minimumDate, maximumDate, onChange]);
 
