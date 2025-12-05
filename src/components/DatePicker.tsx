@@ -1,6 +1,6 @@
 // Componente DatePicker reutilizável
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { theme } from '../theme';
 import { formatDate } from '../utils/date';
@@ -36,16 +36,10 @@ export function DatePicker({
 }: DatePickerProps) {
   const [showPicker, setShowPicker] = useState(false);
 
-  // Para web, usar input HTML nativo com wrapper clicável
+  // Para web, usar input HTML nativo diretamente
   if (Platform.OS === 'web') {
+    const containerRef = useRef<any>(null);
     const inputIdRef = useRef(`date-input-${Math.random().toString(36).substr(2, 9)}`);
-
-    const handleWebDateChange = (e: any) => {
-      const selectedDate = new Date(e.target.value);
-      if (!isNaN(selectedDate.getTime())) {
-        onChange(selectedDate);
-      }
-    };
 
     const formatDateForInput = (date: Date | null): string => {
       if (!date) return '';
@@ -65,62 +59,92 @@ export function DatePicker({
       return '';
     };
 
-    const handlePress = () => {
-      // Criar input temporário e abrir o date picker
-      const tempInput = document.createElement('input');
-      tempInput.type = 'date';
-      tempInput.value = formatDateForInput(value);
-      if (minimumDate) tempInput.min = getMinDate();
-      if (maximumDate) tempInput.max = getMaxDate();
-      tempInput.style.position = 'fixed';
-      tempInput.style.top = '50%';
-      tempInput.style.left = '50%';
-      tempInput.style.transform = 'translate(-50%, -50%)';
-      tempInput.style.opacity = '0';
-      tempInput.style.pointerEvents = 'none';
-      tempInput.style.zIndex = '9999';
-      
-      document.body.appendChild(tempInput);
-      
-      // Tentar usar showPicker() se disponível (Chrome/Edge)
-      if (typeof tempInput.showPicker === 'function') {
-        tempInput.showPicker().catch(() => {
-          tempInput.click();
+    useEffect(() => {
+      if (!containerRef.current) return;
+
+      // Obter o elemento DOM nativo
+      const containerElement = containerRef.current;
+      let inputElement = document.getElementById(inputIdRef.current) as HTMLInputElement;
+
+      if (!inputElement) {
+        // Criar input se não existir
+        inputElement = document.createElement('input');
+        inputElement.type = 'date';
+        inputElement.id = inputIdRef.current;
+        inputElement.style.width = '100%';
+        inputElement.style.padding = '12px 16px';
+        inputElement.style.borderRadius = '8px';
+        inputElement.style.border = `1px solid ${theme.colors.divider}`;
+        inputElement.style.fontSize = '16px';
+        inputElement.style.fontFamily = 'inherit';
+        inputElement.style.backgroundColor = theme.colors.surface;
+        inputElement.style.color = theme.colors.text;
+        inputElement.style.outline = 'none';
+        inputElement.style.cursor = 'pointer';
+        inputElement.style.boxSizing = 'border-box';
+
+        // Event listeners
+        inputElement.addEventListener('change', (e: any) => {
+          const selectedDate = new Date(e.target.value);
+          if (!isNaN(selectedDate.getTime())) {
+            onChange(selectedDate);
+          }
         });
-      } else {
-        tempInput.click();
-      }
-      
-      tempInput.addEventListener('change', (e: any) => {
-        handleWebDateChange(e);
-        document.body.removeChild(tempInput);
-      });
-      
-      tempInput.addEventListener('cancel', () => {
-        document.body.removeChild(tempInput);
-      });
-      
-      // Remover após um tempo se não houver interação
-      setTimeout(() => {
-        if (document.body.contains(tempInput)) {
-          document.body.removeChild(tempInput);
+
+        inputElement.addEventListener('focus', () => {
+          inputElement.style.borderColor = theme.colors.primary;
+        });
+
+        inputElement.addEventListener('blur', () => {
+          inputElement.style.borderColor = theme.colors.divider;
+        });
+
+        // Tentar adicionar ao container React Native
+        try {
+          const nativeNode = (containerElement as any)._nativeNode || (containerElement as any).nativeNode;
+          if (nativeNode && nativeNode.appendChild) {
+            nativeNode.appendChild(inputElement);
+          } else {
+            // Fallback: usar findNodeHandle ou adicionar diretamente
+            const reactInstance = (containerElement as any)._reactInternalInstance || (containerElement as any)._reactInternalFiber;
+            if (reactInstance) {
+              const domNode = reactInstance.stateNode;
+              if (domNode && domNode.appendChild) {
+                domNode.appendChild(inputElement);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Não foi possível adicionar input ao container:', e);
         }
-      }, 10000);
-    };
+      }
+
+      // Atualizar valores
+      inputElement.value = formatDateForInput(value);
+      inputElement.min = getMinDate();
+      inputElement.max = getMaxDate();
+
+      return () => {
+        // Não remover o input para evitar problemas de re-renderização
+      };
+    }, [value, minimumDate, maximumDate]);
 
     return (
       <View style={styles.container}>
         <Text style={styles.label}>{label}</Text>
-        <TouchableOpacity
-          style={[styles.input, !value && styles.inputPlaceholder]}
-          onPress={handlePress}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.inputText, !value && styles.inputTextPlaceholder]}>
-            {value ? formatDate(value) : placeholder}
-          </Text>
-          <Text style={styles.calendarIcon}>📅</Text>
-        </TouchableOpacity>
+        <View
+          ref={containerRef}
+          style={{
+            width: '100%',
+            minHeight: 48,
+            backgroundColor: theme.colors.surface,
+            borderRadius: theme.borderRadius.md,
+            borderWidth: 1,
+            borderColor: theme.colors.divider,
+            padding: theme.spacing.md,
+            justifyContent: 'center',
+          }}
+        />
       </View>
     );
   }
