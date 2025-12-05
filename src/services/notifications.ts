@@ -1,25 +1,38 @@
 // Serviço de notificações push
 
-import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { ScheduledExam, PregnancyProfile } from '../types';
 import { formatDate } from '../utils/date';
 import { formatGestationalAge } from '../utils/gestational';
 import { ReminderTimeOption } from '../store/useSettingsStore';
 
-// Configurar como as notificações devem ser tratadas quando o app está em foreground
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
+// Importar Notifications apenas em plataformas nativas
+let Notifications: any = null;
+if (Platform.OS !== 'web') {
+  try {
+    Notifications = require('expo-notifications');
+    // Configurar como as notificações devem ser tratadas quando o app está em foreground
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: true,
+        shouldSetBadge: true,
+      }),
+    });
+  } catch (e) {
+    console.warn('expo-notifications não disponível');
+  }
+}
 
 /**
  * Solicita permissões para notificações
  */
 export async function requestNotificationPermissions(): Promise<boolean> {
+  // No web, notificações não são suportadas
+  if (Platform.OS === 'web' || !Notifications) {
+    return false;
+  }
+
   try {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
@@ -60,6 +73,11 @@ export async function scheduleExamReminder(
   userName: string,
   reminderWeeksBefore: ReminderTimeOption = 2
 ): Promise<string | null> {
+  // No web, notificações não são suportadas
+  if (Platform.OS === 'web' || !Notifications) {
+    return null;
+  }
+
   try {
     const hasPermission = await requestNotificationPermissions();
     if (!hasPermission) {
@@ -151,6 +169,10 @@ export async function scheduleAllReminders(
  * Cancela todas as notificações agendadas
  */
 export async function cancelAllNotifications(): Promise<void> {
+  if (Platform.OS === 'web' || !Notifications) {
+    return;
+  }
+
   try {
     await Notifications.cancelAllScheduledNotificationsAsync();
   } catch (error) {
@@ -162,6 +184,10 @@ export async function cancelAllNotifications(): Promise<void> {
  * Cancela uma notificação específica
  */
 export async function cancelNotification(notificationId: string): Promise<void> {
+  if (Platform.OS === 'web' || !Notifications) {
+    return;
+  }
+
   try {
     await Notifications.cancelScheduledNotificationAsync(notificationId);
   } catch (error) {
@@ -172,7 +198,11 @@ export async function cancelNotification(notificationId: string): Promise<void> 
 /**
  * Obtém todas as notificações agendadas
  */
-export async function getScheduledNotifications(): Promise<Notifications.NotificationRequest[]> {
+export async function getScheduledNotifications(): Promise<any[]> {
+  if (Platform.OS === 'web' || !Notifications) {
+    return [];
+  }
+
   try {
     return await Notifications.getAllScheduledNotificationsAsync();
   } catch (error) {
@@ -185,8 +215,11 @@ export async function getScheduledNotifications(): Promise<Notifications.Notific
  * Configura listener para quando uma notificação é recebida
  */
 export function addNotificationReceivedListener(
-  listener: (notification: Notifications.Notification) => void
-): Notifications.Subscription {
+  listener: (notification: any) => void
+): any {
+  if (Platform.OS === 'web' || !Notifications) {
+    return { remove: () => {} };
+  }
   return Notifications.addNotificationReceivedListener(listener);
 }
 
@@ -194,8 +227,11 @@ export function addNotificationReceivedListener(
  * Configura listener para quando o usuário toca em uma notificação
  */
 export function addNotificationResponseReceivedListener(
-  listener: (response: Notifications.NotificationResponse) => void
-): Notifications.Subscription {
+  listener: (response: any) => void
+): any {
+  if (Platform.OS === 'web' || !Notifications) {
+    return { remove: () => {} };
+  }
   return Notifications.addNotificationResponseReceivedListener(listener);
 }
 
