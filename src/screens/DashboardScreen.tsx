@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
-import { Card, ExamCard, ExamFilter, Button, AnimatedButton, BabySizeCard } from '../components';
+import { Card, ExamCard, ExamFilter, Button, AnimatedButton, BabySizeCard, PregnancyProgress, SuccessAnimation } from '../components';
 import { useUserStore, usePregnancyStore, useExamsStore, useSettingsStore } from '../store';
 import { ScheduledExam, ExamStatus } from '../types';
 import { formatGestationalAge } from '../utils/gestational';
@@ -36,6 +36,8 @@ export function DashboardScreen() {
 
   const [isInitializing, setIsInitializing] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState<ExamStatus | 'all'>('all');
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     initializeDashboard();
@@ -115,7 +117,8 @@ export function DashboardScreen() {
           onPress: async () => {
             try {
               await markAsCompleted(exam.id);
-              Alert.alert('Sucesso', 'Exame marcado como realizado!');
+              setSuccessMessage(`✅ ${exam.exam.name} marcado como realizado!`);
+              setShowSuccessAnimation(true);
             } catch (error) {
               Alert.alert('Erro', 'Não foi possível atualizar o exame');
             }
@@ -254,7 +257,10 @@ export function DashboardScreen() {
         </Card>
 
         {profile && (
-          <BabySizeCard gestationalAgeWeeks={profile.gestationalAge} />
+          <>
+            <PregnancyProgress profile={profile} />
+            <BabySizeCard gestationalAgeWeeks={profile.gestationalAge} />
+          </>
         )}
 
         <View style={styles.sectionHeader}>
@@ -306,6 +312,12 @@ export function DashboardScreen() {
           ))
         )}
       </ScrollView>
+      
+      <SuccessAnimation
+        visible={showSuccessAnimation}
+        message={successMessage}
+        onComplete={() => setShowSuccessAnimation(false)}
+      />
     </SafeAreaView>
   );
 }

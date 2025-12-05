@@ -9,4 +9,6 @@ export * from './AnimatedCard';
 export * from './AnimatedButton';
 export * from './BabySizeCard';
 export * from './GestationalAgeInput';
+export * from './PregnancyProgress';
+export * from './SuccessAnimation';
 

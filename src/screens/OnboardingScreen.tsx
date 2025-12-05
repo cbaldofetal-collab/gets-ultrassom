@@ -13,10 +13,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
-import { Button, Card, DatePicker } from '../components';
+import { Button, Card, DatePicker, GestationalAgeInput } from '../components';
 import { useUserStore, usePregnancyStore } from '../store';
 import { formatDate, formatDateFull } from '../utils/date';
-import { formatGestationalAge } from '../utils/gestational';
+import { formatGestationalAge, weeksAndDaysToDecimal } from '../utils/gestational';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -25,11 +25,15 @@ interface OnboardingScreenProps {
 type InputMethod = 'lmp' | 'dueDate';
 
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [name, setName] = useState('');
   const [inputMethod, setInputMethod] = useState<InputMethod>('lmp');
   const [lmpDate, setLmpDate] = useState<Date | null>(null);
   const [dueDate, setDueDate] = useState<Date | null>(null);
+  const [hasUltrasound, setHasUltrasound] = useState<boolean | null>(null);
+  const [ultrasoundDate, setUltrasoundDate] = useState<Date | null>(null);
+  const [ultrasoundWeeks, setUltrasoundWeeks] = useState(0);
+  const [ultrasoundDays, setUltrasoundDays] = useState(0);
   
   // Calcular datas mínimas e máximas
   const today = new Date();
@@ -53,22 +57,27 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         return;
       }
       setStep(2);
+    } else if (step === 2) {
+      // Validar dados gestacionais
+      if (inputMethod === 'lmp' && !lmpDate) {
+        Alert.alert('Atenção', 'Por favor, informe a data da última menstruação');
+        return;
+      }
+      if (inputMethod === 'dueDate' && !dueDate) {
+        Alert.alert('Atenção', 'Por favor, informe a data prevista do parto');
+        return;
+      }
+      // Perguntar sobre ultrassom
+      setStep(3);
     }
+  };
+
+  const handleSkipUltrasound = () => {
+    handleComplete();
   };
 
 
   const handleComplete = async () => {
-    // Validar dados
-    if (inputMethod === 'lmp' && !lmpDate) {
-      Alert.alert('Atenção', 'Por favor, informe a data da última menstruação');
-      return;
-    }
-
-    if (inputMethod === 'dueDate' && !dueDate) {
-      Alert.alert('Atenção', 'Por favor, informe a data prevista do parto');
-      return;
-    }
-
     try {
       // Criar usuário
       const user = {
@@ -90,6 +99,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         profileData.dueDate = dueDate;
       }
 
+      // Adicionar dados do primeiro ultrassom se informados
+      if (hasUltrasound && ultrasoundDate && (ultrasoundWeeks > 0 || ultrasoundDays > 0)) {
+        profileData.firstUltrasoundDate = ultrasoundDate;
+        profileData.firstUltrasoundGestationalAge = weeksAndDaysToDecimal(ultrasoundWeeks, ultrasoundDays);
+      }
+
       await setProfile(profileData);
 
       // Aguardar um pouco para garantir que o estado foi atualizado
@@ -103,7 +118,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     }
   };
 
-  const progress = (step / 2) * 100;
+  const totalSteps = hasUltrasound === null ? 2 : 3;
+  const progress = (step / totalSteps) * 100;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -119,18 +135,24 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               </Text>
             </View>
             <Text style={styles.title}>
-              {step === 1 ? 'Bem-vinda ao Gest Ultrassom!' : 'Sua Gestação'}
+              {step === 1 
+                ? 'Bem-vinda ao Gest Ultrassom!' 
+                : step === 2 
+                ? 'Sua Gestação' 
+                : 'Primeiro Ultrassom (Opcional)'}
             </Text>
             <Text style={styles.subtitle}>
               {step === 1
                 ? 'Vamos começar coletando algumas informações para personalizar sua experiência'
-                : 'Informe a data da última menstruação ou a data prevista do parto'}
+                : step === 2
+                ? 'Informe a data da última menstruação ou a data prevista do parto'
+                : 'Se você já fez o primeiro ultrassom, informe os dados para um cálculo mais preciso'}
             </Text>
             <View style={styles.progressBar}>
               <View style={[styles.progressFill, { width: `${progress}%` }]} />
             </View>
             <Text style={styles.progressText}>
-              Passo {step} de 2
+              Passo {step} de {hasUltrasound === null ? 2 : 3}
             </Text>
           </View>
 
@@ -259,20 +281,121 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
             </Card>
           )}
 
+          {step === 3 && (
+            <Card style={styles.stepCard}>
+              <View style={styles.stepHeader}>
+                <Text style={styles.stepTitle}>Primeiro Ultrassom (Opcional)</Text>
+                <Text style={styles.stepDescription}>
+                  Se você já fez o primeiro ultrassom, informe os dados abaixo para um cálculo mais preciso da idade gestacional.
+                </Text>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.questionText}>Você já fez o primeiro ultrassom?</Text>
+                <View style={styles.yesNoButtons}>
+                  <TouchableOpacity
+                    style={[
+                      styles.yesNoButton,
+                      hasUltrasound === true && styles.yesNoButtonSelected,
+                    ]}
+                    onPress={() => setHasUltrasound(true)}
+                  >
+                    <Text style={[
+                      styles.yesNoButtonText,
+                      hasUltrasound === true && styles.yesNoButtonTextSelected,
+                    ]}>
+                      Sim
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.yesNoButton,
+                      hasUltrasound === false && styles.yesNoButtonSelected,
+                    ]}
+                    onPress={() => {
+                      setHasUltrasound(false);
+                      setUltrasoundDate(null);
+                      setUltrasoundWeeks(0);
+                      setUltrasoundDays(0);
+                    }}
+                  >
+                    <Text style={[
+                      styles.yesNoButtonText,
+                      hasUltrasound === false && styles.yesNoButtonTextSelected,
+                    ]}>
+                      Não
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {hasUltrasound === true && (
+                <>
+                  <View style={styles.inputGroup}>
+                    <DatePicker
+                      label="Data do Primeiro Ultrassom"
+                      value={ultrasoundDate}
+                      onChange={setUltrasoundDate}
+                      placeholder="Selecione a data"
+                      maximumDate={today}
+                      minimumDate={minLMPDate}
+                    />
+                  </View>
+
+                  {ultrasoundDate && (
+                    <View style={styles.inputGroup}>
+                      <GestationalAgeInput
+                        label="Idade Gestacional no Primeiro Ultrassom"
+                        weeks={ultrasoundWeeks}
+                        days={ultrasoundDays}
+                        onChange={(weeks, days) => {
+                          setUltrasoundWeeks(weeks);
+                          setUltrasoundDays(days);
+                        }}
+                      />
+                    </View>
+                  )}
+                </>
+              )}
+            </Card>
+          )}
+
           <View style={styles.buttons}>
             {step > 1 && (
               <Button
                 title="Voltar"
-                onPress={() => setStep(1)}
+                onPress={() => {
+                  if (step === 3) {
+                    setStep(2);
+                  } else {
+                    setStep(1);
+                  }
+                }}
                 variant="outline"
                 style={styles.backButton}
               />
             )}
-            <Button
-              title={step === 2 ? 'Começar' : 'Próximo'}
-              onPress={step === 2 ? handleComplete : handleNext}
-              style={styles.nextButton}
-            />
+            {step === 3 ? (
+              <>
+                <Button
+                  title="Pular"
+                  onPress={handleSkipUltrasound}
+                  variant="outline"
+                  style={styles.skipButton}
+                />
+                <Button
+                  title="Começar"
+                  onPress={handleComplete}
+                  style={styles.nextButton}
+                />
+              </>
+            ) : (
+              <Button
+                title={step === 2 ? 'Próximo' : 'Próximo'}
+                onPress={handleNext}
+                style={styles.nextButton}
+              />
+            )}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
