@@ -36,11 +36,17 @@ export function DatePicker({
 }: DatePickerProps) {
   const [showPicker, setShowPicker] = useState(false);
 
-  // Para web, usar input HTML nativo
+  // Para web, usar input HTML nativo com wrapper clicável
   if (Platform.OS === 'web') {
+    const [showWebPicker, setShowWebPicker] = useState(false);
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
     const handleWebDateChange = (e: any) => {
       const selectedDate = new Date(e.target.value);
-      onChange(selectedDate);
+      if (!isNaN(selectedDate.getTime())) {
+        onChange(selectedDate);
+      }
+      setShowWebPicker(false);
     };
 
     const formatDateForInput = (date: Date | null): string => {
@@ -61,27 +67,50 @@ export function DatePicker({
       return '';
     };
 
+    const handlePress = () => {
+      setShowWebPicker(true);
+      // Usar setTimeout para garantir que o input seja focado após o estado atualizar
+      setTimeout(() => {
+        if (inputRef.current) {
+          inputRef.current.showPicker?.();
+          // Fallback: clicar diretamente no input
+          inputRef.current.click();
+        }
+      }, 0);
+    };
+
     return (
       <View style={styles.container}>
         <Text style={styles.label}>{label}</Text>
-        <input
-          type="date"
-          value={formatDateForInput(value)}
-          onChange={handleWebDateChange}
-          min={getMinDate()}
-          max={getMaxDate()}
-          placeholder={placeholder}
-          style={{
-            width: '100%',
-            padding: '12px',
-            borderRadius: '8px',
-            border: `1px solid ${theme.colors.divider}`,
-            fontSize: '16px',
-            fontFamily: 'inherit',
-            backgroundColor: theme.colors.surface,
-            color: theme.colors.text,
-          }}
-        />
+        <TouchableOpacity
+          style={[styles.input, !value && styles.inputPlaceholder]}
+          onPress={handlePress}
+          activeOpacity={0.7}
+        >
+          <Text style={[styles.inputText, !value && styles.inputTextPlaceholder]}>
+            {value ? formatDate(value) : placeholder}
+          </Text>
+          <Text style={styles.calendarIcon}>📅</Text>
+        </TouchableOpacity>
+        {showWebPicker && (
+          <input
+            ref={inputRef}
+            type="date"
+            value={formatDateForInput(value)}
+            onChange={handleWebDateChange}
+            onBlur={() => setShowWebPicker(false)}
+            min={getMinDate()}
+            max={getMaxDate()}
+            style={{
+              position: 'absolute',
+              opacity: 0,
+              width: 0,
+              height: 0,
+              pointerEvents: 'none',
+            }}
+            autoFocus
+          />
+        )}
       </View>
     );
   }
