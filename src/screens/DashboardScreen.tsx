@@ -243,6 +243,10 @@ export function DashboardScreen() {
           )}
         </Card>
 
+        {profile && (
+          <BabySizeCard gestationalAgeWeeks={profile.gestationalAge} />
+        )}
+
         <View style={styles.sectionHeader}>
           <View style={styles.sectionTitleContainer}>
             <Text style={styles.sectionTitle}>Cronograma de Exames</Text>
