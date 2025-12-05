@@ -27,6 +27,7 @@ export default function App() {
       setShowOnboarding(!completed);
     } catch (error) {
       console.error('Erro ao verificar status do onboarding:', error);
+      // Em caso de erro, mostrar onboarding para permitir que o usuário configure
       setShowOnboarding(true);
     }
   };

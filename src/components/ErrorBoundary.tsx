@@ -57,11 +57,16 @@ export class ErrorBoundary extends Component<Props, State> {
             <Text style={styles.message}>
               Ocorreu um erro inesperado. Por favor, tente novamente.
             </Text>
-            {__DEV__ && this.state.error && (
+            {this.state.error && (
               <View style={styles.errorDetails}>
                 <Text style={styles.errorText}>
                   {this.state.error.toString()}
                 </Text>
+                {this.state.error.stack && (
+                  <Text style={styles.errorText}>
+                    {this.state.error.stack.split('\n').slice(0, 5).join('\n')}
+                  </Text>
+                )}
               </View>
             )}
             <Button
