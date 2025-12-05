@@ -1,6 +1,6 @@
 // Componente DatePicker reutilizável
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { theme } from '../theme';
 import { formatDate } from '../utils/date';
@@ -38,15 +38,13 @@ export function DatePicker({
 
   // Para web, usar input HTML nativo com wrapper clicável
   if (Platform.OS === 'web') {
-    const [showWebPicker, setShowWebPicker] = useState(false);
-    const inputRef = React.useRef<HTMLInputElement>(null);
+    const inputRef = useRef<HTMLInputElement | null>(null);
 
     const handleWebDateChange = (e: any) => {
       const selectedDate = new Date(e.target.value);
       if (!isNaN(selectedDate.getTime())) {
         onChange(selectedDate);
       }
-      setShowWebPicker(false);
     };
 
     const formatDateForInput = (date: Date | null): string => {
@@ -68,15 +66,31 @@ export function DatePicker({
     };
 
     const handlePress = () => {
-      setShowWebPicker(true);
-      // Usar setTimeout para garantir que o input seja focado após o estado atualizar
-      setTimeout(() => {
-        if (inputRef.current) {
-          inputRef.current.showPicker?.();
-          // Fallback: clicar diretamente no input
-          inputRef.current.click();
-        }
-      }, 0);
+      // Criar ou focar no input HTML nativo
+      if (inputRef.current) {
+        inputRef.current.showPicker?.();
+        inputRef.current.click();
+      } else {
+        // Se não existe, criar um input temporário e clicar nele
+        const tempInput = document.createElement('input');
+        tempInput.type = 'date';
+        tempInput.value = formatDateForInput(value);
+        if (minimumDate) tempInput.min = getMinDate();
+        if (maximumDate) tempInput.max = getMaxDate();
+        tempInput.style.position = 'absolute';
+        tempInput.style.opacity = '0';
+        tempInput.style.pointerEvents = 'none';
+        document.body.appendChild(tempInput);
+        tempInput.showPicker?.();
+        tempInput.click();
+        tempInput.addEventListener('change', (e: any) => {
+          handleWebDateChange(e);
+          document.body.removeChild(tempInput);
+        });
+        tempInput.addEventListener('cancel', () => {
+          document.body.removeChild(tempInput);
+        });
+      }
     };
 
     return (
@@ -92,25 +106,22 @@ export function DatePicker({
           </Text>
           <Text style={styles.calendarIcon}>📅</Text>
         </TouchableOpacity>
-        {showWebPicker && (
-          <input
-            ref={inputRef}
-            type="date"
-            value={formatDateForInput(value)}
-            onChange={handleWebDateChange}
-            onBlur={() => setShowWebPicker(false)}
-            min={getMinDate()}
-            max={getMaxDate()}
-            style={{
-              position: 'absolute',
-              opacity: 0,
-              width: 0,
-              height: 0,
-              pointerEvents: 'none',
-            }}
-            autoFocus
-          />
-        )}
+        {/* Input HTML nativo oculto */}
+        <input
+          ref={inputRef as any}
+          type="date"
+          value={formatDateForInput(value)}
+          onChange={handleWebDateChange}
+          min={getMinDate()}
+          max={getMaxDate()}
+          style={{
+            position: 'absolute',
+            opacity: 0,
+            width: 0,
+            height: 0,
+            pointerEvents: 'none',
+          }}
+        />
       </View>
     );
   }
