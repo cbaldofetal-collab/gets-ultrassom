@@ -1,7 +1,6 @@
 // Utilitários para integração com WhatsApp
 
-import { Linking } from 'react-native';
-import * as LinkingExpo from 'expo-linking';
+import { Linking, Platform } from 'react-native';
 import { CLINIC_WHATSAPP_NUMBER } from '../constants';
 import { Exam, User } from '../types';
 
@@ -18,20 +17,33 @@ export function generateWhatsAppMessage(user: User, exam: Exam, gestationalAge: 
  */
 export async function openWhatsApp(user: User, exam: Exam, gestationalAge: number): Promise<void> {
   const message = generateWhatsAppMessage(user, exam, gestationalAge);
-  const whatsappUrl = `https://wa.me/${CLINIC_WHATSAPP_NUMBER.replace(/\D/g, '')}?text=${message}`;
+  const phoneNumber = CLINIC_WHATSAPP_NUMBER.replace(/\D/g, '');
+  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
   
   try {
+    // No web, abrir diretamente em nova aba
+    if (Platform.OS === 'web') {
+      window.open(whatsappUrl, '_blank');
+      return;
+    }
+
+    // Em plataformas nativas, usar Linking
     const canOpen = await Linking.canOpenURL(whatsappUrl);
     if (canOpen) {
       await Linking.openURL(whatsappUrl);
     } else {
       // Fallback: tentar abrir WhatsApp Web
-      const whatsappWebUrl = `https://web.whatsapp.com/send?phone=${CLINIC_WHATSAPP_NUMBER.replace(/\D/g, '')}&text=${message}`;
+      const whatsappWebUrl = `https://web.whatsapp.com/send?phone=${phoneNumber}&text=${message}`;
       await Linking.openURL(whatsappWebUrl);
     }
   } catch (error) {
     console.error('Erro ao abrir WhatsApp:', error);
-    throw new Error('Não foi possível abrir o WhatsApp. Verifique se o aplicativo está instalado.');
+    // No web, tentar abrir mesmo se houver erro
+    if (Platform.OS === 'web') {
+      window.open(whatsappUrl, '_blank');
+    } else {
+      throw new Error('Não foi possível abrir o WhatsApp. Verifique se o aplicativo está instalado.');
+    }
   }
 }
 
