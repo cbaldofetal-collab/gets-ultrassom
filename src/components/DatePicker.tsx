@@ -38,7 +38,7 @@ export function DatePicker({
 
   // Para web, usar input HTML nativo com wrapper clicável
   if (Platform.OS === 'web') {
-    const inputRef = useRef<HTMLInputElement | null>(null);
+    const inputIdRef = useRef(`date-input-${Math.random().toString(36).substr(2, 9)}`);
 
     const handleWebDateChange = (e: any) => {
       const selectedDate = new Date(e.target.value);
@@ -66,31 +66,46 @@ export function DatePicker({
     };
 
     const handlePress = () => {
-      // Criar ou focar no input HTML nativo
-      if (inputRef.current) {
-        inputRef.current.showPicker?.();
-        inputRef.current.click();
+      // Criar input temporário e abrir o date picker
+      const tempInput = document.createElement('input');
+      tempInput.type = 'date';
+      tempInput.value = formatDateForInput(value);
+      if (minimumDate) tempInput.min = getMinDate();
+      if (maximumDate) tempInput.max = getMaxDate();
+      tempInput.style.position = 'fixed';
+      tempInput.style.top = '50%';
+      tempInput.style.left = '50%';
+      tempInput.style.transform = 'translate(-50%, -50%)';
+      tempInput.style.opacity = '0';
+      tempInput.style.pointerEvents = 'none';
+      tempInput.style.zIndex = '9999';
+      
+      document.body.appendChild(tempInput);
+      
+      // Tentar usar showPicker() se disponível (Chrome/Edge)
+      if (typeof tempInput.showPicker === 'function') {
+        tempInput.showPicker().catch(() => {
+          tempInput.click();
+        });
       } else {
-        // Se não existe, criar um input temporário e clicar nele
-        const tempInput = document.createElement('input');
-        tempInput.type = 'date';
-        tempInput.value = formatDateForInput(value);
-        if (minimumDate) tempInput.min = getMinDate();
-        if (maximumDate) tempInput.max = getMaxDate();
-        tempInput.style.position = 'absolute';
-        tempInput.style.opacity = '0';
-        tempInput.style.pointerEvents = 'none';
-        document.body.appendChild(tempInput);
-        tempInput.showPicker?.();
         tempInput.click();
-        tempInput.addEventListener('change', (e: any) => {
-          handleWebDateChange(e);
-          document.body.removeChild(tempInput);
-        });
-        tempInput.addEventListener('cancel', () => {
-          document.body.removeChild(tempInput);
-        });
       }
+      
+      tempInput.addEventListener('change', (e: any) => {
+        handleWebDateChange(e);
+        document.body.removeChild(tempInput);
+      });
+      
+      tempInput.addEventListener('cancel', () => {
+        document.body.removeChild(tempInput);
+      });
+      
+      // Remover após um tempo se não houver interação
+      setTimeout(() => {
+        if (document.body.contains(tempInput)) {
+          document.body.removeChild(tempInput);
+        }
+      }, 10000);
     };
 
     return (
@@ -106,22 +121,6 @@ export function DatePicker({
           </Text>
           <Text style={styles.calendarIcon}>📅</Text>
         </TouchableOpacity>
-        {/* Input HTML nativo oculto */}
-        <input
-          ref={inputRef as any}
-          type="date"
-          value={formatDateForInput(value)}
-          onChange={handleWebDateChange}
-          min={getMinDate()}
-          max={getMaxDate()}
-          style={{
-            position: 'absolute',
-            opacity: 0,
-            width: 0,
-            height: 0,
-            pointerEvents: 'none',
-          }}
-        />
       </View>
     );
   }
