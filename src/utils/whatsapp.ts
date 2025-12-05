@@ -23,7 +23,9 @@ export async function openWhatsApp(user: User, exam: Exam, gestationalAge: numbe
   try {
     // No web, abrir diretamente em nova aba
     if (Platform.OS === 'web') {
-      window.open(whatsappUrl, '_blank');
+      if (typeof window !== 'undefined') {
+        window.open(whatsappUrl, '_blank');
+      }
       return;
     }
 
@@ -40,7 +42,9 @@ export async function openWhatsApp(user: User, exam: Exam, gestationalAge: numbe
     console.error('Erro ao abrir WhatsApp:', error);
     // No web, tentar abrir mesmo se houver erro
     if (Platform.OS === 'web') {
-      window.open(whatsappUrl, '_blank');
+      if (typeof window !== 'undefined') {
+        window.open(whatsappUrl, '_blank');
+      }
     } else {
       throw new Error('Não foi possível abrir o WhatsApp. Verifique se o aplicativo está instalado.');
     }
