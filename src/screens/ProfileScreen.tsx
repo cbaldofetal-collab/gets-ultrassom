@@ -277,6 +277,66 @@ export function ProfileScreen() {
 
         <Card style={styles.card}>
           <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>🔬 Primeiro Ultrassom</Text>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.hint}>
+              Se você já fez o primeiro ultrassom, informe os dados abaixo para um cálculo mais preciso da idade gestacional.
+            </Text>
+          </View>
+
+          <View style={styles.field}>
+            <DatePicker
+              label="Data do Primeiro Ultrassom"
+              value={ultrasoundDate}
+              onChange={setUltrasoundDate}
+              placeholder="Selecione a data"
+              maximumDate={today}
+              minimumDate={minLMPDate}
+            />
+          </View>
+
+          {ultrasoundDate && (
+            <View style={styles.field}>
+              <GestationalAgeInput
+                label="Idade Gestacional no Primeiro Ultrassom"
+                weeks={ultrasoundWeeks}
+                days={ultrasoundDays}
+                onChange={(weeks, days) => {
+                  setUltrasoundWeeks(weeks);
+                  setUltrasoundDays(days);
+                }}
+              />
+            </View>
+          )}
+
+          {ultrasoundDate && (ultrasoundWeeks > 0 || ultrasoundDays > 0) && (
+            <Button
+              title="Salvar Dados do Ultrassom"
+              onPress={handleSaveUltrasound}
+              variant="primary"
+              style={styles.saveDateButton}
+            />
+          )}
+
+          {profile?.firstUltrasoundDate && (
+            <View style={styles.field}>
+              <Text style={styles.label}>Dados Salvos:</Text>
+              <Text style={styles.value}>
+                Data: {formatDateFull(profile.firstUltrasoundDate)}
+              </Text>
+              {profile.firstUltrasoundGestationalAge !== undefined && (
+                <Text style={styles.value}>
+                  Idade gestacional: {formatGestationalAge(profile.firstUltrasoundGestationalAge)}
+                </Text>
+              )}
+            </View>
+          )}
+        </Card>
+
+        <Card style={styles.card}>
+          <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>⚙️ Configurações</Text>
           </View>
 
