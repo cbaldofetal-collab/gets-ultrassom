@@ -294,12 +294,6 @@ export function DashboardScreen() {
             </Text>
           </Card>
         ) : (
-          <Card style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              Nenhum exame encontrado. Verifique seu perfil gestacional.
-            </Text>
-          </Card>
-        ) : (
           sortedExams.map((exam, index) => (
             <ExamCard
               key={exam.id}
