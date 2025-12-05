@@ -256,7 +256,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                   onPress={() => {
                     setInputMethod('dueDate');
                     setLmpDate(null);
-                    setTempLmpDate('');
                   }}
                 >
                   <Text style={styles.methodEmoji}>👶</Text>
@@ -318,11 +317,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           {step === 3 && (
             <Card style={styles.stepCard}>
               <View style={styles.stepHeader}>
+                <Text style={styles.stepEmoji}>🔬</Text>
                 <Text style={styles.stepTitle}>Primeiro Ultrassom (Opcional)</Text>
-                <Text style={styles.stepDescription}>
-                  Se você já fez o primeiro ultrassom, informe os dados abaixo para um cálculo mais preciso da idade gestacional.
-                </Text>
               </View>
+              <Text style={styles.stepDescription}>
+                Se você já fez o primeiro ultrassom, informe os dados abaixo para um cálculo mais preciso da idade gestacional.
+              </Text>
 
               <View style={styles.inputGroup}>
                 <Text style={styles.questionText}>Você já fez o primeiro ultrassom?</Text>
