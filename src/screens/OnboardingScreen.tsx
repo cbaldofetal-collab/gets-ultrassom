@@ -153,10 +153,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         }
       }
 
-      // Criar usuário
+      // Criar usuário (senha será armazenada como hash em produção)
       const user = {
         id: `user_${Date.now()}`,
         name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password: password, // Em produção, usar hash (bcrypt, etc)
         createdAt: new Date(),
       };
 
@@ -253,6 +255,105 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                   onFocus={() => setInputFocused(true)}
                   onBlur={() => setInputFocused(false)}
                 />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Email *</Text>
+                <TextInput
+                  style={[styles.input, emailFocused && styles.inputFocused]}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="Ex: maria.silva@email.com"
+                  placeholderTextColor="#94A3B8"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  accessibilityLabel="Email"
+                  onFocus={() => setEmailFocused(true)}
+                  onBlur={() => setEmailFocused(false)}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Senha Alfanumérica *</Text>
+                <View style={styles.passwordContainer}>
+                  <TextInput
+                    style={[styles.input, styles.passwordInput, passwordFocused && styles.inputFocused]}
+                    value={password}
+                    onChangeText={setPassword}
+                    placeholder="Mínimo 8 caracteres (letras e números)"
+                    placeholderTextColor="#94A3B8"
+                    secureTextEntry={!showPassword}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    accessibilityLabel="Senha"
+                    onFocus={() => setPasswordFocused(true)}
+                    onBlur={() => setPasswordFocused(false)}
+                  />
+                  <TouchableOpacity
+                    style={styles.eyeButton}
+                    onPress={() => setShowPassword(!showPassword)}
+                  >
+                    <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                  </TouchableOpacity>
+                </View>
+                {password && (
+                  <View style={styles.passwordInfo}>
+                    <View style={styles.strengthContainer}>
+                      <View
+                        style={[
+                          styles.strengthBar,
+                          {
+                            width: `${
+                              passwordValidation.isValid
+                                ? password.length >= 12
+                                  ? 100
+                                  : 66
+                                : password.length >= 8
+                                ? 33
+                                : 0
+                            }%`,
+                            backgroundColor: passwordValidation.isValid
+                              ? password.length >= 12
+                                ? '#10B981'
+                                : '#3B82F6'
+                              : '#EF4444',
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        styles.strengthText,
+                        {
+                          color: passwordValidation.isValid
+                            ? password.length >= 12
+                              ? '#10B981'
+                              : '#3B82F6'
+                            : '#EF4444',
+                        },
+                      ]}
+                    >
+                      {passwordValidation.isValid
+                        ? password.length >= 12
+                          ? 'Senha forte'
+                          : 'Senha média'
+                        : 'Senha fraca'}
+                    </Text>
+                  </View>
+                )}
+                {!passwordValidation.isValid && password && (
+                  <View style={styles.validationErrors}>
+                    {passwordValidation.errors.map((err, index) => (
+                      <Text key={index} style={styles.validationError}>
+                        • {err}
+                      </Text>
+                    ))}
+                  </View>
+                )}
+                <Text style={styles.hint}>
+                  A senha deve conter: mínimo 8 caracteres, pelo menos 1 letra e 1 número (apenas letras e números)
+                </Text>
               </View>
             </Card>
           )}
@@ -660,11 +761,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: theme.spacing.xs,
     fontStyle: 'italic',
-  },
-  hint: {
-    ...theme.typography.caption,
-    color: theme.colors.textSecondary,
-    marginTop: theme.spacing.xs,
   },
   methodSelector: {
     marginBottom: theme.spacing.lg,
