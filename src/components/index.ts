@@ -2,4 +2,5 @@
 
 export * from './Button';
 export * from './Card';
+export * from './ExamCard';
 

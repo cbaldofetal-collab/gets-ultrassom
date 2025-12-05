@@ -5,6 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { theme } from './src/theme';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
+import { DashboardScreen } from './src/screens/DashboardScreen';
 import { isOnboardingCompleted, setOnboardingCompleted } from './src/services/onboarding';
 import { useUserStore, usePregnancyStore } from './src/store';
 
@@ -56,12 +57,7 @@ export default function App() {
         {showOnboarding ? (
           <OnboardingScreen onComplete={handleOnboardingComplete} />
         ) : (
-          <View style={styles.content}>
-            {/* TODO: Adicionar navegação principal aqui */}
-            <View style={styles.placeholder}>
-              <ActivityIndicator size="large" color={theme.colors.primary} />
-            </View>
-          </View>
+          <DashboardScreen />
         )}
         <StatusBar style="auto" />
       </SafeAreaProvider>

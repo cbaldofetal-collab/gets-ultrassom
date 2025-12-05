@@ -2,4 +2,5 @@
 
 export * from './useUserStore';
 export * from './usePregnancyStore';
+export * from './useExamsStore';
 
