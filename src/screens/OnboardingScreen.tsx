@@ -78,10 +78,13 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
   const handleNext = () => {
     if (step === 1) {
+      // Validar nome
       if (!name.trim()) {
         Alert.alert('Atenção', 'Por favor, informe seu nome');
         return;
       }
+      
+      // Validar email
       if (!email.trim()) {
         Alert.alert('Atenção', 'Por favor, informe seu email');
         return;
@@ -90,14 +93,25 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         Alert.alert('Email Inválido', 'Por favor, informe um email válido');
         return;
       }
+      
+      // Validar senha
       if (!password) {
         Alert.alert('Atenção', 'Por favor, informe uma senha');
         return;
       }
-      if (!passwordValidation.isValid) {
-        Alert.alert('Senha Inválida', passwordValidation.errors.join('\n'));
+      
+      // Validar senha alfanumérica
+      const passwordCheck = validatePassword(password);
+      if (!passwordCheck.isValid) {
+        Alert.alert(
+          'Senha Inválida',
+          passwordCheck.errors.join('\n') || 'A senha não atende aos requisitos'
+        );
         return;
       }
+      
+      // Se passou todas as validações, avançar
+      console.log('Validações passadas, avançando para step 2');
       setStep(2);
     } else if (step === 2) {
       // Validar dados gestacionais
