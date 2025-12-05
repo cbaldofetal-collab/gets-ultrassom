@@ -234,7 +234,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                   onPress={() => {
                     setInputMethod('lmp');
                     setDueDate(null);
-                    setTempDueDate('');
                   }}
                 >
                   <Text style={styles.methodEmoji}>📆</Text>
