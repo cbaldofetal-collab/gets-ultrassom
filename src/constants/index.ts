@@ -3,7 +3,7 @@
 import { Exam } from '../types';
 
 // Número do WhatsApp da Clínica FMFLA
-export const CLINIC_WHATSAPP_NUMBER = '+5511999999999'; // TODO: Atualizar com número real
+export const CLINIC_WHATSAPP_NUMBER = '+5511913561616';
 
 // Protocolo de exames da clínica
 export const EXAMS_PROTOCOL: Exam[] = [
