@@ -36,6 +36,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [ultrasoundDate, setUltrasoundDate] = useState<Date | null>(null);
   const [ultrasoundWeeks, setUltrasoundWeeks] = useState(0);
   const [ultrasoundDays, setUltrasoundDays] = useState(0);
+  const [inputFocused, setInputFocused] = useState(false);
   
   // Calcular datas mínimas e máximas
   const today = new Date();
@@ -203,13 +204,15 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Nome Completo *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, inputFocused && styles.inputFocused]}
                   value={name}
                   onChangeText={setName}
                   placeholder="Ex: Maria Silva"
-                  placeholderTextColor={theme.colors.textSecondary}
+                  placeholderTextColor="#94A3B8"
                   autoCapitalize="words"
                   accessibilityLabel="Nome completo"
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
                 />
               </View>
             </Card>
@@ -559,7 +562,11 @@ const styles = StyleSheet.create({
     borderColor: '#E2E8F0',
     color: '#1E293B',
     fontSize: 16,
-    transition: 'all 0.2s',
+  },
+  inputFocused: {
+    borderColor: theme.colors.primary,
+    backgroundColor: '#FFFFFF',
+    ...theme.shadows.sm,
   },
   hint: {
     ...theme.typography.caption,
