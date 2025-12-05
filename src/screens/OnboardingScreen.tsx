@@ -19,6 +19,7 @@ import { useUserStore, usePregnancyStore } from '../store';
 import { formatDate, formatDateFull } from '../utils/date';
 import { formatGestationalAge, weeksAndDaysToDecimal } from '../utils/gestational';
 import { validateLMP, validateDueDate, validateFirstUltrasoundDate, validateGestationalAge } from '../utils/validation';
+import { validatePassword, getPasswordStrength, PasswordValidationResult } from '../utils/passwordValidation';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -29,6 +30,10 @@ type InputMethod = 'lmp' | 'dueDate';
 export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordValidation, setPasswordValidation] = useState<PasswordValidationResult>({ isValid: false, errors: [] });
   const [inputMethod, setInputMethod] = useState<InputMethod>('lmp');
   const [lmpDate, setLmpDate] = useState<Date | null>(null);
   const [dueDate, setDueDate] = useState<Date | null>(null);
@@ -37,6 +42,8 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [ultrasoundWeeks, setUltrasoundWeeks] = useState(0);
   const [ultrasoundDays, setUltrasoundDays] = useState(0);
   const [inputFocused, setInputFocused] = useState(false);
+  const [emailFocused, setEmailFocused] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   
   // Calcular datas mínimas e máximas
   const today = new Date();
@@ -53,10 +60,42 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const setUser = useUserStore((state) => state.setUser);
   const setProfile = usePregnancyStore((state) => state.setProfile);
 
+  // Validar email
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Validar senha quando mudar
+  React.useEffect(() => {
+    if (password) {
+      const validation = validatePassword(password);
+      setPasswordValidation(validation);
+    } else {
+      setPasswordValidation({ isValid: false, errors: [] });
+    }
+  }, [password]);
+
   const handleNext = () => {
     if (step === 1) {
       if (!name.trim()) {
         Alert.alert('Atenção', 'Por favor, informe seu nome');
+        return;
+      }
+      if (!email.trim()) {
+        Alert.alert('Atenção', 'Por favor, informe seu email');
+        return;
+      }
+      if (!validateEmail(email)) {
+        Alert.alert('Email Inválido', 'Por favor, informe um email válido');
+        return;
+      }
+      if (!password) {
+        Alert.alert('Atenção', 'Por favor, informe uma senha');
+        return;
+      }
+      if (!passwordValidation.isValid) {
+        Alert.alert('Senha Inválida', passwordValidation.errors.join('\n'));
         return;
       }
       setStep(2);
@@ -567,6 +606,60 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
     backgroundColor: '#FFFFFF',
     ...theme.shadows.sm,
+  },
+  passwordContainer: {
+    position: 'relative',
+  },
+  passwordInput: {
+    paddingRight: 50,
+  },
+  eyeButton: {
+    position: 'absolute',
+    right: theme.spacing.md,
+    top: '50%',
+    transform: [{ translateY: -12 }],
+    padding: theme.spacing.xs,
+  },
+  eyeIcon: {
+    fontSize: 20,
+  },
+  passwordInfo: {
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.xs,
+  },
+  strengthContainer: {
+    height: 4,
+    backgroundColor: '#E2E8F0',
+    borderRadius: theme.borderRadius.sm,
+    overflow: 'hidden',
+    marginBottom: theme.spacing.xs,
+  },
+  strengthBar: {
+    height: '100%',
+    borderRadius: theme.borderRadius.sm,
+    transition: 'all 0.3s',
+  },
+  strengthText: {
+    ...theme.typography.caption,
+    fontWeight: '600',
+    fontSize: 12,
+  },
+  validationErrors: {
+    marginTop: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
+  },
+  validationError: {
+    ...theme.typography.caption,
+    color: theme.colors.error,
+    fontSize: 12,
+    marginBottom: theme.spacing.xs / 2,
+  },
+  hint: {
+    ...theme.typography.caption,
+    color: '#64748B',
+    fontSize: 12,
+    marginTop: theme.spacing.xs,
+    fontStyle: 'italic',
   },
   hint: {
     ...theme.typography.caption,

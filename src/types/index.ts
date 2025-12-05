@@ -5,6 +5,7 @@ export interface User {
   name: string;
   phone?: string;
   email?: string;
+  password?: string; // Hash da senha (não armazenar em texto plano)
   createdAt: Date;
 }
 
