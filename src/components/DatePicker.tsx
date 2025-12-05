@@ -39,7 +39,7 @@ export function DatePicker({
   // Para web, usar input HTML nativo diretamente
   if (Platform.OS === 'web') {
     const containerRef = useRef<any>(null);
-    const inputIdRef = useRef(`date-input-${Math.random().toString(36).substr(2, 9)}`);
+    const inputRef = useRef<HTMLInputElement | null>(null);
 
     const formatDateForInput = (date: Date | null): string => {
       if (!date) return '';
@@ -62,26 +62,40 @@ export function DatePicker({
     useEffect(() => {
       if (!containerRef.current) return;
 
-      // Obter o elemento DOM nativo
-      const containerElement = containerRef.current;
-      let inputElement = document.getElementById(inputIdRef.current) as HTMLInputElement;
+      // Obter o elemento DOM do container
+      const findDOMNode = (node: any): HTMLElement | null => {
+        if (node && node.nodeType === 1) return node;
+        if (node?._nativeNode) return node._nativeNode;
+        if (node?.nativeNode) return node.nativeNode;
+        if (node?._reactInternalInstance?.stateNode) return node._reactInternalInstance.stateNode;
+        if (node?._reactInternalFiber?.stateNode) return node._reactInternalFiber.stateNode;
+        return null;
+      };
 
+      const containerElement = findDOMNode(containerRef.current);
+      if (!containerElement) return;
+
+      // Criar ou obter input
+      let inputElement = inputRef.current;
       if (!inputElement) {
-        // Criar input se não existir
         inputElement = document.createElement('input');
         inputElement.type = 'date';
-        inputElement.id = inputIdRef.current;
-        inputElement.style.width = '100%';
-        inputElement.style.padding = '12px 16px';
-        inputElement.style.borderRadius = '8px';
-        inputElement.style.border = `1px solid ${theme.colors.divider}`;
-        inputElement.style.fontSize = '16px';
-        inputElement.style.fontFamily = 'inherit';
-        inputElement.style.backgroundColor = theme.colors.surface;
-        inputElement.style.color = theme.colors.text;
-        inputElement.style.outline = 'none';
-        inputElement.style.cursor = 'pointer';
-        inputElement.style.boxSizing = 'border-box';
+        inputRef.current = inputElement;
+
+        // Estilos
+        Object.assign(inputElement.style, {
+          width: '100%',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          border: `1px solid ${theme.colors.divider}`,
+          fontSize: '16px',
+          fontFamily: 'inherit',
+          backgroundColor: theme.colors.surface,
+          color: theme.colors.text,
+          outline: 'none',
+          cursor: 'pointer',
+          boxSizing: 'border-box',
+        });
 
         // Event listeners
         inputElement.addEventListener('change', (e: any) => {
@@ -92,42 +106,32 @@ export function DatePicker({
         });
 
         inputElement.addEventListener('focus', () => {
-          inputElement.style.borderColor = theme.colors.primary;
+          if (inputElement) {
+            inputElement.style.borderColor = theme.colors.primary;
+          }
         });
 
         inputElement.addEventListener('blur', () => {
-          inputElement.style.borderColor = theme.colors.divider;
+          if (inputElement) {
+            inputElement.style.borderColor = theme.colors.divider;
+          }
         });
 
-        // Tentar adicionar ao container React Native
-        try {
-          const nativeNode = (containerElement as any)._nativeNode || (containerElement as any).nativeNode;
-          if (nativeNode && nativeNode.appendChild) {
-            nativeNode.appendChild(inputElement);
-          } else {
-            // Fallback: usar findNodeHandle ou adicionar diretamente
-            const reactInstance = (containerElement as any)._reactInternalInstance || (containerElement as any)._reactInternalFiber;
-            if (reactInstance) {
-              const domNode = reactInstance.stateNode;
-              if (domNode && domNode.appendChild) {
-                domNode.appendChild(inputElement);
-              }
-            }
-          }
-        } catch (e) {
-          console.warn('Não foi possível adicionar input ao container:', e);
-        }
+        // Adicionar ao container
+        containerElement.appendChild(inputElement);
       }
 
       // Atualizar valores
-      inputElement.value = formatDateForInput(value);
-      inputElement.min = getMinDate();
-      inputElement.max = getMaxDate();
+      if (inputElement) {
+        inputElement.value = formatDateForInput(value);
+        inputElement.min = getMinDate();
+        inputElement.max = getMaxDate();
+      }
 
       return () => {
         // Não remover o input para evitar problemas de re-renderização
       };
-    }, [value, minimumDate, maximumDate]);
+    }, [value, minimumDate, maximumDate, onChange]);
 
     return (
       <View style={styles.container}>
@@ -143,6 +147,7 @@ export function DatePicker({
             borderColor: theme.colors.divider,
             padding: theme.spacing.md,
             justifyContent: 'center',
+            overflow: 'hidden',
           }}
         />
       </View>
@@ -247,4 +252,3 @@ const styles = StyleSheet.create({
     marginLeft: theme.spacing.sm,
   },
 });
-
