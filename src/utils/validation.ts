@@ -212,10 +212,3 @@ export function validatePregnancyProfile(profile: Partial<PregnancyProfile>): { 
   };
 }
 
-// Função auxiliar para converter semanas decimais em semanas e dias
-function decimalToWeeksAndDays(weeksDecimal: number): { weeks: number; days: number } {
-  const weeks = Math.floor(weeksDecimal);
-  const days = Math.floor((weeksDecimal - weeks) * 7);
-  return { weeks, days };
-}
-
