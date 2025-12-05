@@ -5,6 +5,7 @@ import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DashboardScreen } from '../screens/DashboardScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
+import { HistoryScreen } from '../screens/HistoryScreen';
 import { theme } from '../theme';
 
 const Tab = createBottomTabNavigator();
@@ -36,6 +37,14 @@ export function AppNavigator() {
         options={{
           tabBarLabel: 'Cronograma',
           tabBarIcon: () => <Text style={{ fontSize: 24 }}>📅</Text>,
+        }}
+      />
+      <Tab.Screen
+        name="History"
+        component={HistoryScreen}
+        options={{
+          tabBarLabel: 'Histórico',
+          tabBarIcon: () => <Text style={{ fontSize: 24 }}>📋</Text>,
         }}
       />
       <Tab.Screen

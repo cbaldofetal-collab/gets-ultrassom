@@ -11,12 +11,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
-import { Card, ExamCard, ExamFilter } from '../components';
+import { Card, ExamCard, ExamFilter, Button } from '../components';
 import { useUserStore, usePregnancyStore, useExamsStore } from '../store';
 import { ScheduledExam, ExamStatus } from '../types';
 import { formatGestationalAge } from '../utils/gestational';
 import { openWhatsApp } from '../utils/whatsapp';
 import { scheduleAllReminders, requestNotificationPermissions } from '../services/notifications';
+import { shareScheduleAsPDF, shareScheduleViaWhatsApp } from '../services/shareSchedule';
 
 export function DashboardScreen() {
   const user = useUserStore((state) => state.user);
@@ -120,6 +121,51 @@ export function DashboardScreen() {
     );
   };
 
+  const handleShareSchedule = () => {
+    if (!user || !profile) return;
+
+    Alert.alert(
+      'Compartilhar Cronograma',
+      'Como deseja compartilhar o cronograma?',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: '📱 WhatsApp',
+          onPress: async () => {
+            try {
+              await shareScheduleViaWhatsApp({
+                exams: scheduledExams,
+                userName: user.name,
+                gestationalAge: profile.gestationalAge,
+                dueDate: profile.dueDate,
+              });
+            } catch (error) {
+              // Erro já tratado no serviço
+            }
+          },
+        },
+        {
+          text: '📄 PDF',
+          onPress: async () => {
+            try {
+              await shareScheduleAsPDF({
+                exams: scheduledExams,
+                userName: user.name,
+                gestationalAge: profile.gestationalAge,
+                dueDate: profile.dueDate,
+              });
+            } catch (error) {
+              // Erro já tratado no serviço
+            }
+          },
+        },
+      ]
+    );
+  };
+
   if (isInitializing) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -194,10 +240,20 @@ export function DashboardScreen() {
         </Card>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Cronograma de Exames</Text>
-          <Text style={styles.sectionSubtitle}>
-            {scheduledExams.filter(e => e.status === 'completed').length} de {scheduledExams.length} realizados
-          </Text>
+          <View style={styles.sectionTitleContainer}>
+            <Text style={styles.sectionTitle}>Cronograma de Exames</Text>
+            <Text style={styles.sectionSubtitle}>
+              {scheduledExams.filter(e => e.status === 'completed').length} de {scheduledExams.length} realizados
+            </Text>
+          </View>
+          {user && profile && (
+            <Button
+              title="📤 Compartilhar"
+              onPress={handleShareSchedule}
+              variant="outline"
+              style={styles.shareButton}
+            />
+          )}
         </View>
 
         <ExamFilter
@@ -313,7 +369,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: theme.spacing.md,
+  },
+  sectionTitleContainer: {
+    flex: 1,
   },
   sectionTitle: {
     ...theme.typography.h2,
@@ -323,6 +385,10 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     ...theme.typography.bodySmall,
     color: theme.colors.textSecondary,
+  },
+  shareButton: {
+    marginLeft: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
   },
   emptyCard: {
     backgroundColor: theme.colors.warningLight,
