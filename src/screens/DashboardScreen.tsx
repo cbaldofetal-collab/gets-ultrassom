@@ -251,7 +251,7 @@ export function DashboardScreen() {
             </Text>
           </View>
           {user && profile && (
-            <Button
+            <AnimatedButton
               title="📤 Compartilhar"
               onPress={handleShareSchedule}
               variant="outline"
@@ -280,13 +280,14 @@ export function DashboardScreen() {
             </Text>
           </Card>
         ) : (
-          sortedExams.map((exam) => (
+          sortedExams.map((exam, index) => (
             <ExamCard
               key={exam.id}
               exam={exam}
               currentGestationalAge={profile.gestationalAge}
               onSchedule={handleSchedule}
               onMarkCompleted={handleMarkCompleted}
+              index={index}
             />
           ))
         )}

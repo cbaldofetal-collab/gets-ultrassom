@@ -143,19 +143,20 @@ export function HistoryScreen() {
             </Text>
           </Card>
         ) : (
-          completedExams.map((exam) => (
-            <Card key={exam.id} style={styles.examCard}>
-              <View style={styles.examHeader}>
-                <View style={styles.examIconContainer}>
-                  <Text style={styles.examIcon}>✅</Text>
+          completedExams.map((exam, index) => (
+            <AnimatedCard key={exam.id} delay={index * 100}>
+              <Card style={styles.examCard}>
+                <View style={styles.examHeader}>
+                  <View style={styles.examIconContainer}>
+                    <Text style={styles.examIcon}>{getExamIcon(exam.exam.type)}</Text>
+                  </View>
+                  <View style={styles.examInfo}>
+                    <Text style={styles.examName}>{exam.exam.name}</Text>
+                    <Text style={styles.examDescription}>
+                      {exam.exam.description}
+                    </Text>
+                  </View>
                 </View>
-                <View style={styles.examInfo}>
-                  <Text style={styles.examName}>{exam.exam.name}</Text>
-                  <Text style={styles.examDescription}>
-                    {exam.exam.description}
-                  </Text>
-                </View>
-              </View>
 
               <View style={styles.examDetails}>
                 {exam.completedDate && (
@@ -188,7 +189,8 @@ export function HistoryScreen() {
                   </View>
                 )}
               </View>
-            </Card>
+              </Card>
+            </AnimatedCard>
           ))
         )}
       </ScrollView>

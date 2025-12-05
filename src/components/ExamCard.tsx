@@ -1,17 +1,19 @@
 // Componente para exibir um exame no calendário
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { theme } from '../theme';
 import { ScheduledExam } from '../types';
 import { formatDate } from '../utils/date';
 import { formatGestationalAge } from '../utils/gestational';
+import { getExamIcon } from '../utils/examIcons';
 
 interface ExamCardProps {
   exam: ScheduledExam;
   currentGestationalAge: number;
   onSchedule: (exam: ScheduledExam) => void;
   onMarkCompleted: (exam: ScheduledExam) => void;
+  index?: number;
 }
 
 const STATUS_COLORS = {
@@ -35,7 +37,29 @@ const STATUS_ICONS = {
   missed: '❌',
 };
 
-export function ExamCard({ exam, currentGestationalAge, onSchedule, onMarkCompleted }: ExamCardProps) {
+export function ExamCard({ exam, currentGestationalAge, onSchedule, onMarkCompleted, index = 0 }: ExamCardProps) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        delay: index * 100,
+        useNativeDriver: true,
+      }),
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        delay: index * 100,
+        tension: 50,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   const isInWindow = currentGestationalAge >= exam.exam.idealWindowStart && 
                      currentGestationalAge <= exam.exam.idealWindowEnd;
   const isPast = currentGestationalAge > exam.exam.idealWindowEnd;
@@ -44,6 +68,23 @@ export function ExamCard({ exam, currentGestationalAge, onSchedule, onMarkComple
   const statusColor = STATUS_COLORS[exam.status];
   const statusLabel = STATUS_LABELS[exam.status];
   const statusIcon = STATUS_ICONS[exam.status];
+  const examIcon = getExamIcon(exam.exam.type);
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 0.98,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, {
+      toValue: 1,
+      friction: 3,
+      tension: 40,
+      useNativeDriver: true,
+    }).start();
+  };
 
   const getWindowStatus = () => {
     if (isPast) return 'Janela passou';
@@ -53,18 +94,34 @@ export function ExamCard({ exam, currentGestationalAge, onSchedule, onMarkComple
   };
 
   return (
-    <View style={[styles.card, { borderLeftColor: statusColor }]}>
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.examName}>{exam.exam.name}</Text>
-          <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
-            <Text style={styles.statusIcon}>{statusIcon}</Text>
-            <Text style={[styles.statusText, { color: statusColor }]}>
-              {statusLabel}
-            </Text>
+    <Animated.View
+      style={[
+        {
+          opacity: fadeAnim,
+          transform: [
+            { translateY: slideAnim },
+            { scale: scaleAnim },
+          ],
+        },
+      ]}
+    >
+      <View style={[styles.card, { borderLeftColor: statusColor }]}>
+        <View style={styles.header}>
+          <View style={styles.headerLeft}>
+            <View style={styles.examIconContainer}>
+              <Text style={styles.examIcon}>{examIcon}</Text>
+            </View>
+            <View style={styles.examTitleContainer}>
+              <Text style={styles.examName}>{exam.exam.name}</Text>
+              <View style={[styles.statusBadge, { backgroundColor: statusColor + '20' }]}>
+                <Text style={styles.statusIcon}>{statusIcon}</Text>
+                <Text style={[styles.statusText, { color: statusColor }]}>
+                  {statusLabel}
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
-      </View>
 
       <Text style={styles.description}>{exam.exam.description}</Text>
 
@@ -101,6 +158,9 @@ export function ExamCard({ exam, currentGestationalAge, onSchedule, onMarkComple
           <TouchableOpacity
             style={[styles.actionButton, styles.scheduleButton]}
             onPress={() => onSchedule(exam)}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            activeOpacity={0.8}
           >
             <Text style={styles.actionButtonText}>📱 Agendar via WhatsApp</Text>
           </TouchableOpacity>
@@ -110,6 +170,9 @@ export function ExamCard({ exam, currentGestationalAge, onSchedule, onMarkComple
           <TouchableOpacity
             style={[styles.actionButton, styles.completeButton]}
             onPress={() => onMarkCompleted(exam)}
+            onPressIn={handlePressIn}
+            onPressOut={handlePressOut}
+            activeOpacity={0.8}
           >
             <Text style={styles.actionButtonText}>✅ Marcar como Realizado</Text>
           </TouchableOpacity>
@@ -124,6 +187,7 @@ export function ExamCard({ exam, currentGestationalAge, onSchedule, onMarkComple
         )}
       </View>
     </View>
+    </Animated.View>
   );
 }
 
@@ -143,6 +207,23 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.sm,
   },
   headerLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  examIconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.md,
+  },
+  examIcon: {
+    fontSize: 28,
+  },
+  examTitleContainer: {
     flex: 1,
   },
   examName: {
