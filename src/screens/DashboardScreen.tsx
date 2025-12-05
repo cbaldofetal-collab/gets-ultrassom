@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
 import { Card, ExamCard, ExamFilter, Button } from '../components';
-import { useUserStore, usePregnancyStore, useExamsStore } from '../store';
+import { useUserStore, usePregnancyStore, useExamsStore, useSettingsStore } from '../store';
 import { ScheduledExam, ExamStatus } from '../types';
 import { formatGestationalAge } from '../utils/gestational';
 import { openWhatsApp } from '../utils/whatsapp';
@@ -30,6 +30,9 @@ export function DashboardScreen() {
   const markAsScheduled = useExamsStore((state) => state.markAsScheduled);
   const loadExams = useExamsStore((state) => state.loadExams);
   const isLoading = useExamsStore((state) => state.isLoading);
+  
+  const reminderWeeksBefore = useSettingsStore((state) => state.reminderWeeksBefore);
+  const loadSettings = useSettingsStore((state) => state.loadSettings);
 
   const [isInitializing, setIsInitializing] = useState(true);
   const [selectedFilter, setSelectedFilter] = useState<ExamStatus | 'all'>('all');
@@ -48,12 +51,13 @@ export function DashboardScreen() {
   useEffect(() => {
     // Agendar lembretes quando o perfil ou exames mudarem
     if (profile && scheduledExams.length > 0 && user) {
-      scheduleAllReminders(scheduledExams, profile, user.name);
+      scheduleAllReminders(scheduledExams, profile, user.name, reminderWeeksBefore);
     }
-  }, [profile, scheduledExams, user]);
+  }, [profile, scheduledExams, user, reminderWeeksBefore]);
 
   const initializeDashboard = async () => {
     try {
+      await loadSettings();
       await loadProfile();
       await loadExams();
 

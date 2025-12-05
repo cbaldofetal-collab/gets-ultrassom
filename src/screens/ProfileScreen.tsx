@@ -13,9 +13,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
 import { Card, Button, DatePicker } from '../components';
-import { useUserStore, usePregnancyStore } from '../store';
+import { useUserStore, usePregnancyStore, useSettingsStore } from '../store';
 import { formatDate, formatDateFull } from '../utils/date';
 import { formatGestationalAge } from '../utils/gestational';
+import { ReminderTimeOption } from '../store/useSettingsStore';
 
 export function ProfileScreen() {
   const user = useUserStore((state) => state.user);
@@ -24,6 +25,10 @@ export function ProfileScreen() {
   const setProfile = usePregnancyStore((state) => state.setProfile);
   const clearUser = useUserStore((state) => state.clearUser);
   const clearProfile = usePregnancyStore((state) => state.clearProfile);
+  
+  const reminderWeeksBefore = useSettingsStore((state) => state.reminderWeeksBefore);
+  const setReminderWeeksBefore = useSettingsStore((state) => state.setReminderWeeksBefore);
+  const loadSettings = useSettingsStore((state) => state.loadSettings);
 
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(user?.name || '');
@@ -232,6 +237,55 @@ export function ProfileScreen() {
                 style={styles.saveDateButton}
               />
             )}
+          </View>
+        </Card>
+
+        <Card style={styles.card}>
+          <View style={styles.cardHeader}>
+            <Text style={styles.cardTitle}>⚙️ Configurações</Text>
+          </View>
+
+          <View style={styles.field}>
+            <Text style={styles.label}>Lembretes de Exames</Text>
+            <Text style={styles.hint}>
+              Quando deseja receber lembretes antes da janela ideal do exame?
+            </Text>
+            <View style={styles.reminderOptions}>
+              {[
+                { value: 1 as ReminderTimeOption, label: '1 semana antes', icon: '📅' },
+                { value: 2 as ReminderTimeOption, label: '2 semanas antes', icon: '📆' },
+                { value: 4 as ReminderTimeOption, label: '1 mês antes', icon: '🗓️' },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.reminderOption,
+                    reminderWeeksBefore === option.value && styles.reminderOptionSelected,
+                  ]}
+                  onPress={async () => {
+                    try {
+                      await setReminderWeeksBefore(option.value);
+                      Alert.alert('Sucesso', 'Preferência de lembrete atualizada!');
+                    } catch (error) {
+                      Alert.alert('Erro', 'Não foi possível atualizar a preferência');
+                    }
+                  }}
+                >
+                  <Text style={styles.reminderIcon}>{option.icon}</Text>
+                  <Text
+                    style={[
+                      styles.reminderOptionText,
+                      reminderWeeksBefore === option.value && styles.reminderOptionTextSelected,
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                  {reminderWeeksBefore === option.value && (
+                    <Text style={styles.reminderCheck}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
         </Card>
 

@@ -5,6 +5,7 @@ import { Platform } from 'react-native';
 import { ScheduledExam, PregnancyProfile } from '../types';
 import { formatDate } from '../utils/date';
 import { formatGestationalAge } from '../utils/gestational';
+import { ReminderTimeOption } from '../store/useSettingsStore';
 
 // Configurar como as notificações devem ser tratadas quando o app está em foreground
 Notifications.setNotificationHandler({
@@ -56,7 +57,8 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 export async function scheduleExamReminder(
   exam: ScheduledExam,
   profile: PregnancyProfile,
-  userName: string
+  userName: string,
+  reminderWeeksBefore: ReminderTimeOption = 2
 ): Promise<string | null> {
   try {
     const hasPermission = await requestNotificationPermissions();
@@ -64,8 +66,8 @@ export async function scheduleExamReminder(
       return null;
     }
 
-    // Calcular quando enviar o lembrete (2 semanas antes da janela ideal)
-    const reminderWeek = exam.exam.idealWindowStart - exam.exam.reminderWeeksBefore;
+    // Calcular quando enviar o lembrete usando a preferência do usuário
+    const reminderWeek = exam.exam.idealWindowStart - reminderWeeksBefore;
     const currentWeek = profile.gestationalAge;
 
     // Se já passou da semana do lembrete, não agendar
@@ -124,7 +126,8 @@ function calculateReminderDate(profile: PregnancyProfile, targetWeek: number): D
 export async function scheduleAllReminders(
   exams: ScheduledExam[],
   profile: PregnancyProfile,
-  userName: string
+  userName: string,
+  reminderWeeksBefore: ReminderTimeOption = 2
 ): Promise<void> {
   try {
     // Cancelar notificações antigas primeiro
@@ -133,7 +136,7 @@ export async function scheduleAllReminders(
     // Agendar novos lembretes
     for (const exam of exams) {
       if (exam.status === 'pending' && !exam.reminderSent) {
-        const notificationId = await scheduleExamReminder(exam, profile, userName);
+        const notificationId = await scheduleExamReminder(exam, profile, userName, reminderWeeksBefore);
         if (notificationId) {
           console.log(`Notificação agendada para ${exam.exam.name}: ${notificationId}`);
         }
