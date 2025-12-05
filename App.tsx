@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { theme } from './src/theme';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
-import { DashboardScreen } from './src/screens/DashboardScreen';
+import { AppNavigator } from './src/navigation/AppNavigator';
 import { isOnboardingCompleted, setOnboardingCompleted } from './src/services/onboarding';
 import { useUserStore, usePregnancyStore } from './src/store';
 
@@ -57,7 +58,9 @@ export default function App() {
         {showOnboarding ? (
           <OnboardingScreen onComplete={handleOnboardingComplete} />
         ) : (
-          <DashboardScreen />
+          <NavigationContainer>
+            <AppNavigator />
+          </NavigationContainer>
         )}
         <StatusBar style="auto" />
       </SafeAreaProvider>

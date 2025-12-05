@@ -16,6 +16,7 @@ import { useUserStore, usePregnancyStore, useExamsStore } from '../store';
 import { ScheduledExam } from '../types';
 import { formatGestationalAge } from '../utils/gestational';
 import { openWhatsApp } from '../utils/whatsapp';
+import { scheduleAllReminders, requestNotificationPermissions } from '../services/notifications';
 
 export function DashboardScreen() {
   const user = useUserStore((state) => state.user);
@@ -35,10 +36,20 @@ export function DashboardScreen() {
     initializeDashboard();
   }, []);
 
+  useEffect(() => {
+    // Agendar lembretes quando o perfil ou exames mudarem
+    if (profile && scheduledExams.length > 0 && user) {
+      scheduleAllReminders(scheduledExams, profile, user.name);
+    }
+  }, [profile, scheduledExams, user]);
+
   const initializeDashboard = async () => {
     try {
       await loadProfile();
       await loadExams();
+
+      // Solicitar permissões de notificação
+      await requestNotificationPermissions();
 
       // Se não há exames agendados e temos um perfil, gerar cronograma
       if (profile && scheduledExams.length === 0 && user) {
