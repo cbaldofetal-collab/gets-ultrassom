@@ -9,6 +9,7 @@ import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { AppNavigator } from './src/navigation/AppNavigator';
 import { isOnboardingCompleted, setOnboardingCompleted } from './src/services/onboarding';
 import { useUserStore, usePregnancyStore } from './src/store';
+import { ErrorBoundary } from './src/components';
 
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
@@ -53,18 +54,20 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <SafeAreaProvider>
-        {showOnboarding ? (
-          <OnboardingScreen onComplete={handleOnboardingComplete} />
-        ) : (
-          <NavigationContainer>
-            <AppNavigator />
-          </NavigationContainer>
-        )}
-        <StatusBar style="auto" />
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={styles.container}>
+        <SafeAreaProvider>
+          {showOnboarding ? (
+            <OnboardingScreen onComplete={handleOnboardingComplete} />
+          ) : (
+            <NavigationContainer>
+              <AppNavigator />
+            </NavigationContainer>
+          )}
+          <StatusBar style="auto" />
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 

@@ -17,6 +17,7 @@ import { useUserStore, usePregnancyStore, useSettingsStore } from '../store';
 import { formatDate, formatDateFull } from '../utils/date';
 import { formatGestationalAge, decimalToWeeksAndDays, weeksAndDaysToDecimal } from '../utils/gestational';
 import { ReminderTimeOption } from '../store/useSettingsStore';
+import { validateLMP, validateDueDate, validateFirstUltrasoundDate, validateGestationalAge, validateConsistency } from '../utils/validation';
 
 export function ProfileScreen() {
   const user = useUserStore((state) => state.user);
@@ -94,11 +95,45 @@ export function ProfileScreen() {
       return;
     }
 
+    // Validar DUM
+    const validation = validateLMP(lmpDate);
+    if (!validation.valid) {
+      Alert.alert('Data Inválida', validation.error || 'Data da última menstruação inválida');
+      return;
+    }
+
+    // Validar consistência com DPP se existir
+    if (profile.dueDate) {
+      const consistencyValidation = validateConsistency(lmpDate, profile.dueDate);
+      if (!consistencyValidation.valid) {
+        Alert.alert(
+          'Atenção',
+          consistencyValidation.error || 'A data está inconsistente com a DPP. Deseja continuar mesmo assim?',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Continuar',
+              onPress: async () => {
+                try {
+                  await setProfile({ lastMenstrualPeriod: lmpDate });
+                  Alert.alert('Sucesso', 'Data da última menstruação atualizada!');
+                } catch (error) {
+                  Alert.alert('Erro', 'Não foi possível atualizar a data');
+                }
+              },
+            },
+          ]
+        );
+        return;
+      }
+    }
+
     try {
       await setProfile({ lastMenstrualPeriod: lmpDate });
       Alert.alert('Sucesso', 'Data da última menstruação atualizada!');
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível atualizar a data');
+      const errorMessage = error instanceof Error ? error.message : 'Não foi possível atualizar a data';
+      Alert.alert('Erro', errorMessage);
     }
   };
 
@@ -108,11 +143,45 @@ export function ProfileScreen() {
       return;
     }
 
+    // Validar DPP
+    const validation = validateDueDate(dueDate);
+    if (!validation.valid) {
+      Alert.alert('Data Inválida', validation.error || 'Data prevista do parto inválida');
+      return;
+    }
+
+    // Validar consistência com DUM se existir
+    if (profile.lastMenstrualPeriod) {
+      const consistencyValidation = validateConsistency(profile.lastMenstrualPeriod, dueDate);
+      if (!consistencyValidation.valid) {
+        Alert.alert(
+          'Atenção',
+          consistencyValidation.error || 'A data está inconsistente com a DUM. Deseja continuar mesmo assim?',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Continuar',
+              onPress: async () => {
+                try {
+                  await setProfile({ dueDate });
+                  Alert.alert('Sucesso', 'Data prevista do parto atualizada!');
+                } catch (error) {
+                  Alert.alert('Erro', 'Não foi possível atualizar a data');
+                }
+              },
+            },
+          ]
+        );
+        return;
+      }
+    }
+
     try {
       await setProfile({ dueDate });
       Alert.alert('Sucesso', 'Data prevista do parto atualizada!');
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível atualizar a data');
+      const errorMessage = error instanceof Error ? error.message : 'Não foi possível atualizar a data';
+      Alert.alert('Erro', errorMessage);
     }
   };
 
@@ -127,15 +196,64 @@ export function ProfileScreen() {
       return;
     }
 
+    // Validar idade gestacional
+    const ageValidation = validateGestationalAge(ultrasoundWeeks, ultrasoundDays);
+    if (!ageValidation.valid) {
+      Alert.alert('Idade Gestacional Inválida', ageValidation.error || 'Idade gestacional inválida');
+      return;
+    }
+
+    // Validar data do ultrassom
+    const dateValidation = validateFirstUltrasoundDate(ultrasoundDate, profile.lastMenstrualPeriod || undefined);
+    if (!dateValidation.valid) {
+      Alert.alert('Data Inválida', dateValidation.error || 'Data do ultrassom inválida');
+      return;
+    }
+
+    // Validar consistência com DUM se existir
+    const gestationalAgeDecimal = weeksAndDaysToDecimal(ultrasoundWeeks, ultrasoundDays);
+    if (profile.lastMenstrualPeriod) {
+      const consistencyValidation = validateConsistency(
+        profile.lastMenstrualPeriod,
+        undefined,
+        ultrasoundDate,
+        gestationalAgeDecimal
+      );
+      if (!consistencyValidation.valid) {
+        Alert.alert(
+          'Atenção',
+          consistencyValidation.error || 'Os dados estão inconsistentes com a DUM. Deseja continuar mesmo assim?',
+          [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Continuar',
+              onPress: async () => {
+                try {
+                  await setProfile({
+                    firstUltrasoundDate: ultrasoundDate,
+                    firstUltrasoundGestationalAge: gestationalAgeDecimal,
+                  });
+                  Alert.alert('Sucesso', 'Dados do primeiro ultrassom atualizados!');
+                } catch (error) {
+                  Alert.alert('Erro', 'Não foi possível atualizar os dados');
+                }
+              },
+            },
+          ]
+        );
+        return;
+      }
+    }
+
     try {
-      const gestationalAgeDecimal = weeksAndDaysToDecimal(ultrasoundWeeks, ultrasoundDays);
       await setProfile({
         firstUltrasoundDate: ultrasoundDate,
         firstUltrasoundGestationalAge: gestationalAgeDecimal,
       });
       Alert.alert('Sucesso', 'Dados do primeiro ultrassom atualizados!');
     } catch (error) {
-      Alert.alert('Erro', 'Não foi possível atualizar os dados');
+      const errorMessage = error instanceof Error ? error.message : 'Não foi possível atualizar os dados';
+      Alert.alert('Erro', errorMessage);
     }
   };
 

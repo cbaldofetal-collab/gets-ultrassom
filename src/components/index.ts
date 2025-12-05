@@ -11,4 +11,5 @@ export * from './BabySizeCard';
 export * from './GestationalAgeInput';
 export * from './PregnancyProgress';
 export * from './SuccessAnimation';
+export * from './ErrorBoundary';
 

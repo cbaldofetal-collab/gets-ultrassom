@@ -17,6 +17,7 @@ import { Button, Card, DatePicker, GestationalAgeInput } from '../components';
 import { useUserStore, usePregnancyStore } from '../store';
 import { formatDate, formatDateFull } from '../utils/date';
 import { formatGestationalAge, weeksAndDaysToDecimal } from '../utils/gestational';
+import { validateLMP, validateDueDate, validateFirstUltrasoundDate, validateGestationalAge } from '../utils/validation';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -79,6 +80,38 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
   const handleComplete = async () => {
     try {
+      // Validar dados antes de salvar
+      if (inputMethod === 'lmp' && lmpDate) {
+        const validation = validateLMP(lmpDate);
+        if (!validation.valid) {
+          Alert.alert('Data Inválida', validation.error || 'Data da última menstruação inválida');
+          return;
+        }
+      }
+
+      if (inputMethod === 'dueDate' && dueDate) {
+        const validation = validateDueDate(dueDate);
+        if (!validation.valid) {
+          Alert.alert('Data Inválida', validation.error || 'Data prevista do parto inválida');
+          return;
+        }
+      }
+
+      // Validar ultrassom se informado
+      if (hasUltrasound && ultrasoundDate && (ultrasoundWeeks > 0 || ultrasoundDays > 0)) {
+        const ageValidation = validateGestationalAge(ultrasoundWeeks, ultrasoundDays);
+        if (!ageValidation.valid) {
+          Alert.alert('Idade Gestacional Inválida', ageValidation.error || 'Idade gestacional inválida');
+          return;
+        }
+
+        const dateValidation = validateFirstUltrasoundDate(ultrasoundDate, lmpDate || undefined);
+        if (!dateValidation.valid) {
+          Alert.alert('Data Inválida', dateValidation.error || 'Data do ultrassom inválida');
+          return;
+        }
+      }
+
       // Criar usuário
       const user = {
         id: `user_${Date.now()}`,

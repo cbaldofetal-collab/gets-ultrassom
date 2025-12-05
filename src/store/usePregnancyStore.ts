@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PregnancyProfile } from '../types';
 import { updatePregnancyProfile } from '../utils/gestational';
+import { validatePregnancyProfile } from '../utils/validation';
 
 interface PregnancyState {
   profile: PregnancyProfile | null;
@@ -25,11 +26,21 @@ export const usePregnancyStore = create<PregnancyState>((set, get) => ({
   setProfile: async (profileData: Partial<PregnancyProfile>) => {
     set({ isLoading: true, error: null });
     try {
+      // Validar dados antes de salvar
       const currentProfile = get().profile;
-      const updatedProfile = updatePregnancyProfile({
+      const profileToValidate = {
         ...currentProfile,
         ...profileData,
-      } as Partial<PregnancyProfile>);
+      } as Partial<PregnancyProfile>;
+
+      const validation = validatePregnancyProfile(profileToValidate);
+      if (!validation.valid) {
+        const errorMessage = validation.errors.join('; ');
+        set({ error: errorMessage, isLoading: false });
+        throw new Error(errorMessage);
+      }
+
+      const updatedProfile = updatePregnancyProfile(profileToValidate);
 
       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProfile));
       set({ profile: updatedProfile, isLoading: false, error: null });
