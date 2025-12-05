@@ -1,6 +1,6 @@
 // Tela de onboarding - coleta DUM ou DPP
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -67,7 +67,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   };
 
   // Validar senha quando mudar
-  React.useEffect(() => {
+  useEffect(() => {
     if (password) {
       const validation = validatePassword(password);
       setPasswordValidation(validation);
