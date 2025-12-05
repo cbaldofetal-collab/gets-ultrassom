@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
-import { Card, ExamCard, ExamFilter, Button } from '../components';
+import { Card, ExamCard, ExamFilter, Button, AnimatedButton, BabySizeCard } from '../components';
 import { useUserStore, usePregnancyStore, useExamsStore, useSettingsStore } from '../store';
 import { ScheduledExam, ExamStatus } from '../types';
 import { formatGestationalAge } from '../utils/gestational';
