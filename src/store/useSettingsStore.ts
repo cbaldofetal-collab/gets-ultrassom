@@ -64,5 +64,5 @@ export const useSettingsStore = create<SettingsState>((set, get) => ({
   clearError: () => {
     set({ error: null });
   },
-});
+}));
 
