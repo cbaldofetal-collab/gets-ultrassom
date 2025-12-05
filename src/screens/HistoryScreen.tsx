@@ -10,11 +10,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
-import { Card } from '../components';
+import { Card, AnimatedCard } from '../components';
 import { useExamsStore, usePregnancyStore } from '../store';
 import { ScheduledExam } from '../types';
 import { formatDate, formatDateFull } from '../utils/date';
 import { formatGestationalAge, calculateGestationalAgeFromLMP } from '../utils/gestational';
+import { getExamIcon } from '../utils/examIcons';
 
 export function HistoryScreen() {
   const scheduledExams = useExamsStore((state) => state.scheduledExams);
