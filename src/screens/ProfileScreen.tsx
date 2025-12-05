@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
-import { Card, Button } from '../components';
+import { Card, Button, DatePicker } from '../components';
 import { useUserStore, usePregnancyStore } from '../store';
 import { formatDate, formatDateFull } from '../utils/date';
 import { formatGestationalAge } from '../utils/gestational';
@@ -27,22 +27,32 @@ export function ProfileScreen() {
 
   const [editingName, setEditingName] = useState(false);
   const [name, setName] = useState(user?.name || '');
-  const [editingLMP, setEditingLMP] = useState(false);
-  const [tempLMP, setTempLMP] = useState('');
-  const [editingDueDate, setEditingDueDate] = useState(false);
-  const [tempDueDate, setTempDueDate] = useState('');
+  const [lmpDate, setLmpDate] = useState<Date | null>(null);
+  const [dueDate, setDueDate] = useState<Date | null>(null);
 
   useEffect(() => {
     if (user) {
       setName(user.name);
     }
     if (profile?.lastMenstrualPeriod) {
-      setTempLMP(formatDate(profile.lastMenstrualPeriod));
+      setLmpDate(profile.lastMenstrualPeriod);
     }
     if (profile?.dueDate) {
-      setTempDueDate(formatDate(profile.dueDate));
+      setDueDate(profile.dueDate);
     }
   }, [user, profile]);
+
+  // Calcular datas mínimas e máximas
+  const today = new Date();
+  const maxLMPDate = new Date(today);
+  maxLMPDate.setDate(maxLMPDate.getDate() - 7); // Mínimo 1 semana atrás
+  const minLMPDate = new Date(today);
+  minLMPDate.setFullYear(minLMPDate.getFullYear() - 1); // Máximo 1 ano atrás
+  
+  const minDueDate = new Date(today);
+  minDueDate.setDate(minDueDate.getDate() + 7); // Mínimo 1 semana no futuro
+  const maxDueDate = new Date(today);
+  maxDueDate.setMonth(maxDueDate.getMonth() + 10); // Máximo 10 meses no futuro
 
   const handleSaveName = async () => {
     if (!name.trim()) {
@@ -62,27 +72,13 @@ export function ProfileScreen() {
   };
 
   const handleSaveLMP = async () => {
-    if (!profile) return;
-
-    const parts = tempLMP.split('/');
-    if (parts.length !== 3) {
-      Alert.alert('Atenção', 'Formato inválido. Use DD/MM/AAAA');
-      return;
-    }
-
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const year = parseInt(parts[2], 10);
-
-    const date = new Date(year, month, day);
-    if (date.getDate() !== day || date.getMonth() !== month || date.getFullYear() !== year) {
-      Alert.alert('Atenção', 'Data inválida');
+    if (!profile || !lmpDate) {
+      Alert.alert('Atenção', 'Selecione uma data válida');
       return;
     }
 
     try {
-      await setProfile({ lastMenstrualPeriod: date });
-      setEditingLMP(false);
+      await setProfile({ lastMenstrualPeriod: lmpDate });
       Alert.alert('Sucesso', 'Data da última menstruação atualizada!');
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível atualizar a data');
@@ -90,27 +86,13 @@ export function ProfileScreen() {
   };
 
   const handleSaveDueDate = async () => {
-    if (!profile) return;
-
-    const parts = tempDueDate.split('/');
-    if (parts.length !== 3) {
-      Alert.alert('Atenção', 'Formato inválido. Use DD/MM/AAAA');
-      return;
-    }
-
-    const day = parseInt(parts[0], 10);
-    const month = parseInt(parts[1], 10) - 1;
-    const year = parseInt(parts[2], 10);
-
-    const date = new Date(year, month, day);
-    if (date.getDate() !== day || date.getMonth() !== month || date.getFullYear() !== year) {
-      Alert.alert('Atenção', 'Data inválida');
+    if (!profile || !dueDate) {
+      Alert.alert('Atenção', 'Selecione uma data válida');
       return;
     }
 
     try {
-      await setProfile({ dueDate: date });
-      setEditingDueDate(false);
+      await setProfile({ dueDate });
       Alert.alert('Sucesso', 'Data prevista do parto atualizada!');
     } catch (error) {
       Alert.alert('Erro', 'Não foi possível atualizar a data');
@@ -215,114 +197,40 @@ export function ProfileScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Data da Última Menstruação (DUM)</Text>
-            {editingLMP ? (
-              <View style={styles.editContainer}>
-                <TextInput
-                  style={styles.input}
-                  value={tempLMP}
-                  onChangeText={setTempLMP}
-                  placeholder="DD/MM/AAAA"
-                  keyboardType="numeric"
-                  maxLength={10}
-                  autoFocus
-                />
-                <Text style={styles.hint}>Formato: DD/MM/AAAA</Text>
-                <View style={styles.editActions}>
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => {
-                      if (profile.lastMenstrualPeriod) {
-                        setTempLMP(formatDate(profile.lastMenstrualPeriod));
-                      }
-                      setEditingLMP(false);
-                    }}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancelar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.saveButton}
-                    onPress={handleSaveLMP}
-                  >
-                    <Text style={styles.saveButtonText}>Salvar</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.valueContainer}>
-                <Text style={styles.value}>
-                  {profile.lastMenstrualPeriod
-                    ? formatDateFull(profile.lastMenstrualPeriod)
-                    : 'Não informado'}
-                </Text>
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={() => {
-                    if (profile.lastMenstrualPeriod) {
-                      setTempLMP(formatDate(profile.lastMenstrualPeriod));
-                    }
-                    setEditingLMP(true);
-                  }}
-                >
-                  <Text style={styles.editButtonText}>✏️ Editar</Text>
-                </TouchableOpacity>
-              </View>
+            <DatePicker
+              label="Data da Última Menstruação (DUM)"
+              value={lmpDate}
+              onChange={setLmpDate}
+              placeholder="Selecione a data"
+              maximumDate={maxLMPDate}
+              minimumDate={minLMPDate}
+            />
+            {lmpDate && lmpDate.getTime() !== profile.lastMenstrualPeriod?.getTime() && (
+              <Button
+                title="Salvar Data"
+                onPress={handleSaveLMP}
+                variant="primary"
+                style={styles.saveDateButton}
+              />
             )}
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Data Prevista do Parto (DPP)</Text>
-            {editingDueDate ? (
-              <View style={styles.editContainer}>
-                <TextInput
-                  style={styles.input}
-                  value={tempDueDate}
-                  onChangeText={setTempDueDate}
-                  placeholder="DD/MM/AAAA"
-                  keyboardType="numeric"
-                  maxLength={10}
-                  autoFocus
-                />
-                <Text style={styles.hint}>Formato: DD/MM/AAAA</Text>
-                <View style={styles.editActions}>
-                  <TouchableOpacity
-                    style={styles.cancelButton}
-                    onPress={() => {
-                      if (profile.dueDate) {
-                        setTempDueDate(formatDate(profile.dueDate));
-                      }
-                      setEditingDueDate(false);
-                    }}
-                  >
-                    <Text style={styles.cancelButtonText}>Cancelar</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.saveButton}
-                    onPress={handleSaveDueDate}
-                  >
-                    <Text style={styles.saveButtonText}>Salvar</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <View style={styles.valueContainer}>
-                <Text style={styles.value}>
-                  {profile.dueDate
-                    ? formatDateFull(profile.dueDate)
-                    : 'Não informado'}
-                </Text>
-                <TouchableOpacity
-                  style={styles.editButton}
-                  onPress={() => {
-                    if (profile.dueDate) {
-                      setTempDueDate(formatDate(profile.dueDate));
-                    }
-                    setEditingDueDate(true);
-                  }}
-                >
-                  <Text style={styles.editButtonText}>✏️ Editar</Text>
-                </TouchableOpacity>
-              </View>
+            <DatePicker
+              label="Data Prevista do Parto (DPP)"
+              value={dueDate}
+              onChange={setDueDate}
+              placeholder="Selecione a data"
+              minimumDate={minDueDate}
+              maximumDate={maxDueDate}
+            />
+            {dueDate && dueDate.getTime() !== profile.dueDate?.getTime() && (
+              <Button
+                title="Salvar Data"
+                onPress={handleSaveDueDate}
+                variant="primary"
+                style={styles.saveDateButton}
+              />
             )}
           </View>
         </Card>
@@ -469,6 +377,9 @@ const styles = StyleSheet.create({
   },
   dangerButton: {
     borderColor: theme.colors.error,
+  },
+  saveDateButton: {
+    marginTop: theme.spacing.sm,
   },
 });
 

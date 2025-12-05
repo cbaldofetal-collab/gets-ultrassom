@@ -45,12 +45,22 @@ export const usePregnancyStore = create<PregnancyState>((set, get) => ({
     try {
       const stored = await AsyncStorage.getItem(STORAGE_KEY);
       if (stored) {
-        const profile = JSON.parse(stored);
-        profile.lastMenstrualPeriod = profile.lastMenstrualPeriod ? new Date(profile.lastMenstrualPeriod) : undefined;
-        profile.dueDate = profile.dueDate ? new Date(profile.dueDate) : undefined;
-        profile.createdAt = new Date(profile.createdAt);
-        profile.updatedAt = new Date(profile.updatedAt);
-        set({ profile, isLoading: false, error: null });
+        const profileData = JSON.parse(stored);
+        profileData.lastMenstrualPeriod = profileData.lastMenstrualPeriod ? new Date(profileData.lastMenstrualPeriod) : undefined;
+        profileData.dueDate = profileData.dueDate ? new Date(profileData.dueDate) : undefined;
+        profileData.createdAt = new Date(profileData.createdAt);
+        profileData.updatedAt = new Date(profileData.updatedAt);
+        
+        // Recalcular idade gestacional automaticamente com base na data atual
+        const updatedProfile = updatePregnancyProfile(profileData);
+        
+        // Salvar apenas se a idade gestacional mudou (para evitar salvamentos desnecessários)
+        const currentProfile = get().profile;
+        if (!currentProfile || currentProfile.gestationalAge !== updatedProfile.gestationalAge) {
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedProfile));
+        }
+        
+        set({ profile: updatedProfile, isLoading: false, error: null });
       } else {
         set({ profile: null, isLoading: false, error: null });
       }

@@ -6,7 +6,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TextInput,
   TouchableOpacity,
   Alert,
   KeyboardAvoidingView,
@@ -14,7 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
-import { Button, Card } from '../components';
+import { Button, Card, DatePicker } from '../components';
 import { useUserStore, usePregnancyStore } from '../store';
 import { formatDate, formatDateFull } from '../utils/date';
 import { formatGestationalAge } from '../utils/gestational';
@@ -31,8 +30,18 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [inputMethod, setInputMethod] = useState<InputMethod>('lmp');
   const [lmpDate, setLmpDate] = useState<Date | null>(null);
   const [dueDate, setDueDate] = useState<Date | null>(null);
-  const [tempLmpDate, setTempLmpDate] = useState('');
-  const [tempDueDate, setTempDueDate] = useState('');
+  
+  // Calcular datas mínimas e máximas
+  const today = new Date();
+  const maxLMPDate = new Date(today);
+  maxLMPDate.setDate(maxLMPDate.getDate() - 7); // Mínimo 1 semana atrás
+  const minLMPDate = new Date(today);
+  minLMPDate.setFullYear(minLMPDate.getFullYear() - 1); // Máximo 1 ano atrás
+  
+  const minDueDate = new Date(today);
+  minDueDate.setDate(minDueDate.getDate() + 7); // Mínimo 1 semana no futuro
+  const maxDueDate = new Date(today);
+  maxDueDate.setMonth(maxDueDate.getMonth() + 10); // Máximo 10 meses no futuro
 
   const setUser = useUserStore((state) => state.setUser);
   const setProfile = usePregnancyStore((state) => state.setProfile);
@@ -47,33 +56,6 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     }
   };
 
-  const handleDateInput = (dateString: string, type: 'lmp' | 'dueDate') => {
-    // Formato esperado: DD/MM/YYYY
-    const parts = dateString.split('/');
-    if (parts.length === 3) {
-      const day = parseInt(parts[0], 10);
-      const month = parseInt(parts[1], 10) - 1; // Mês é 0-indexed
-      const year = parseInt(parts[2], 10);
-
-      if (!isNaN(day) && !isNaN(month) && !isNaN(year)) {
-        const date = new Date(year, month, day);
-        if (date.getDate() === day && date.getMonth() === month && date.getFullYear() === year) {
-          if (type === 'lmp') {
-            setLmpDate(date);
-          } else {
-            setDueDate(date);
-          }
-          return;
-        }
-      }
-    }
-    // Se não for válido, limpa
-    if (type === 'lmp') {
-      setLmpDate(null);
-    } else {
-      setDueDate(null);
-    }
-  };
 
   const handleComplete = async () => {
     // Validar dados
@@ -235,26 +217,17 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
               {inputMethod === 'lmp' && (
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Data da Última Menstruação *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={tempLmpDate}
-                    onChangeText={(text) => {
-                      setTempLmpDate(text);
-                      handleDateInput(text, 'lmp');
-                    }}
-                    placeholder="DD/MM/AAAA"
-                    placeholderTextColor={theme.colors.textSecondary}
-                    keyboardType="numeric"
-                    maxLength={10}
-                    accessibilityLabel="Data da última menstruação"
+                  <DatePicker
+                    label="Data da Última Menstruação *"
+                    value={lmpDate}
+                    onChange={(date) => setLmpDate(date)}
+                    placeholder="Selecione a data da última menstruação"
+                    maximumDate={maxLMPDate}
+                    minimumDate={minLMPDate}
                   />
-                  <Text style={styles.hint}>
-                    Formato: DD/MM/AAAA (ex: 15/01/2024)
-                  </Text>
                   {lmpDate && (
                     <View style={styles.preview}>
-                      <Text style={styles.previewLabel}>Data informada:</Text>
+                      <Text style={styles.previewLabel}>Data selecionada:</Text>
                       <Text style={styles.previewValue}>
                         {formatDateFull(lmpDate)}
                       </Text>
@@ -265,26 +238,17 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
               {inputMethod === 'dueDate' && (
                 <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Data Prevista do Parto *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={tempDueDate}
-                    onChangeText={(text) => {
-                      setTempDueDate(text);
-                      handleDateInput(text, 'dueDate');
-                    }}
-                    placeholder="DD/MM/AAAA"
-                    placeholderTextColor={theme.colors.textSecondary}
-                    keyboardType="numeric"
-                    maxLength={10}
-                    accessibilityLabel="Data prevista do parto"
+                  <DatePicker
+                    label="Data Prevista do Parto *"
+                    value={dueDate}
+                    onChange={(date) => setDueDate(date)}
+                    placeholder="Selecione a data prevista do parto"
+                    minimumDate={minDueDate}
+                    maximumDate={maxDueDate}
                   />
-                  <Text style={styles.hint}>
-                    Formato: DD/MM/AAAA (ex: 15/10/2024)
-                  </Text>
                   {dueDate && (
                     <View style={styles.preview}>
-                      <Text style={styles.previewLabel}>Data informada:</Text>
+                      <Text style={styles.previewLabel}>Data selecionada:</Text>
                       <Text style={styles.previewValue}>
                         {formatDateFull(dueDate)}
                       </Text>

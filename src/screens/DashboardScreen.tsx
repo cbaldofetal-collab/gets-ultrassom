@@ -11,9 +11,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '../theme';
-import { Card, ExamCard } from '../components';
+import { Card, ExamCard, ExamFilter } from '../components';
 import { useUserStore, usePregnancyStore, useExamsStore } from '../store';
-import { ScheduledExam } from '../types';
+import { ScheduledExam, ExamStatus } from '../types';
 import { formatGestationalAge } from '../utils/gestational';
 import { openWhatsApp } from '../utils/whatsapp';
 import { scheduleAllReminders, requestNotificationPermissions } from '../services/notifications';
@@ -31,9 +31,17 @@ export function DashboardScreen() {
   const isLoading = useExamsStore((state) => state.isLoading);
 
   const [isInitializing, setIsInitializing] = useState(true);
+  const [selectedFilter, setSelectedFilter] = useState<ExamStatus | 'all'>('all');
 
   useEffect(() => {
     initializeDashboard();
+    
+    // Atualizar perfil periodicamente para recalcular idade gestacional
+    const interval = setInterval(() => {
+      loadProfile();
+    }, 24 * 60 * 60 * 1000); // A cada 24 horas
+    
+    return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
@@ -133,8 +141,13 @@ export function DashboardScreen() {
     );
   }
 
+  // Filtrar exames por status
+  const filteredExams = selectedFilter === 'all' 
+    ? scheduledExams 
+    : scheduledExams.filter(exam => exam.status === selectedFilter);
+
   // Ordenar exames: primeiro os que estão na janela ideal, depois por ordem de semana
-  const sortedExams = [...scheduledExams].sort((a, b) => {
+  const sortedExams = [...filteredExams].sort((a, b) => {
     const aInWindow = profile.gestationalAge >= a.exam.idealWindowStart && 
                       profile.gestationalAge <= a.exam.idealWindowEnd;
     const bInWindow = profile.gestationalAge >= b.exam.idealWindowStart && 
@@ -183,11 +196,24 @@ export function DashboardScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Cronograma de Exames</Text>
           <Text style={styles.sectionSubtitle}>
-            {sortedExams.filter(e => e.status === 'completed').length} de {sortedExams.length} realizados
+            {scheduledExams.filter(e => e.status === 'completed').length} de {scheduledExams.length} realizados
           </Text>
         </View>
 
+        <ExamFilter
+          selectedFilter={selectedFilter}
+          onFilterChange={setSelectedFilter}
+        />
+
         {sortedExams.length === 0 ? (
+          <Card style={styles.emptyCard}>
+            <Text style={styles.emptyText}>
+              {selectedFilter === 'all' 
+                ? 'Nenhum exame encontrado. Verifique seu perfil gestacional.'
+                : `Nenhum exame ${selectedFilter === 'pending' ? 'pendente' : selectedFilter === 'scheduled' ? 'agendado' : selectedFilter === 'completed' ? 'realizado' : 'perdido'} encontrado.`}
+            </Text>
+          </Card>
+        ) : (
           <Card style={styles.emptyCard}>
             <Text style={styles.emptyText}>
               Nenhum exame encontrado. Verifique seu perfil gestacional.
