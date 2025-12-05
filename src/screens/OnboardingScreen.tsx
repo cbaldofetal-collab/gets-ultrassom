@@ -44,6 +44,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   const [inputFocused, setInputFocused] = useState(false);
   const [emailFocused, setEmailFocused] = useState(false);
   const [passwordFocused, setPasswordFocused] = useState(false);
+  const [errors, setErrors] = useState<{ name?: string; email?: string; password?: string }>({});
   
   // Calcular datas mínimas e máximas
   const today = new Date();
@@ -78,39 +79,42 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
   const handleNext = () => {
     if (step === 1) {
+      const newErrors: { name?: string; email?: string; password?: string } = {};
+      
       // Validar nome
       if (!name.trim()) {
-        Alert.alert('Atenção', 'Por favor, informe seu nome');
-        return;
+        newErrors.name = 'Por favor, informe seu nome';
       }
       
       // Validar email
       if (!email.trim()) {
-        Alert.alert('Atenção', 'Por favor, informe seu email');
-        return;
-      }
-      if (!validateEmail(email)) {
-        Alert.alert('Email Inválido', 'Por favor, informe um email válido');
-        return;
+        newErrors.email = 'Por favor, informe seu email';
+      } else if (!validateEmail(email)) {
+        newErrors.email = 'Por favor, informe um email válido';
       }
       
       // Validar senha
       if (!password) {
-        Alert.alert('Atenção', 'Por favor, informe uma senha');
+        newErrors.password = 'Por favor, informe uma senha';
+      } else {
+        const passwordCheck = validatePassword(password);
+        if (!passwordCheck.isValid) {
+          newErrors.password = passwordCheck.errors[0] || 'A senha não atende aos requisitos';
+        }
+      }
+      
+      // Se há erros, mostrar e não avançar
+      if (Object.keys(newErrors).length > 0) {
+        setErrors(newErrors);
+        // Também mostrar alert para garantir feedback
+        if (Platform.OS === 'web') {
+          console.error('Erros de validação:', newErrors);
+        }
         return;
       }
       
-      // Validar senha alfanumérica
-      const passwordCheck = validatePassword(password);
-      if (!passwordCheck.isValid) {
-        Alert.alert(
-          'Senha Inválida',
-          passwordCheck.errors.join('\n') || 'A senha não atende aos requisitos'
-        );
-        return;
-      }
-      
-      // Se passou todas as validações, avançar
+      // Limpar erros e avançar
+      setErrors({});
       console.log('Validações passadas, avançando para step 2');
       setStep(2);
     } else if (step === 2) {
@@ -292,9 +296,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                 <Text style={styles.label}>Senha Alfanumérica *</Text>
                 <View style={styles.passwordContainer}>
                   <TextInput
-                    style={[styles.input, styles.passwordInput, passwordFocused && styles.inputFocused]}
+                    style={[styles.input, styles.passwordInput, passwordFocused && styles.inputFocused, errors.password && styles.inputError]}
                     value={password}
-                    onChangeText={setPassword}
+                    onChangeText={(text) => {
+                      setPassword(text);
+                      if (errors.password) setErrors({ ...errors, password: undefined });
+                    }}
                     placeholder="Mínimo 8 caracteres (letras e números)"
                     placeholderTextColor="#94A3B8"
                     secureTextEntry={!showPassword}
@@ -364,6 +371,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                       </Text>
                     ))}
                   </View>
+                )}
+                {errors.password && !passwordValidation.isValid && (
+                  <Text style={styles.errorText}>{errors.password}</Text>
                 )}
                 <Text style={styles.hint}>
                   A senha deve conter: mínimo 8 caracteres, pelo menos 1 letra e 1 número (apenas letras e números)
@@ -721,6 +731,17 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.primary,
     backgroundColor: '#FFFFFF',
     ...theme.shadows.sm,
+  },
+  inputError: {
+    borderColor: theme.colors.error,
+    backgroundColor: '#FEF2F2',
+  },
+  errorText: {
+    ...theme.typography.caption,
+    color: theme.colors.error,
+    fontSize: 12,
+    marginTop: theme.spacing.xs,
+    fontWeight: '500',
   },
   passwordContainer: {
     position: 'relative',
