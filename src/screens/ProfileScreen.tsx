@@ -39,6 +39,7 @@ export function ProfileScreen() {
   const [ultrasoundDays, setUltrasoundDays] = useState(0);
 
   useEffect(() => {
+    loadSettings();
     if (user) {
       setName(user.name);
     }
@@ -47,6 +48,14 @@ export function ProfileScreen() {
     }
     if (profile?.dueDate) {
       setDueDate(profile.dueDate);
+    }
+    if (profile?.firstUltrasoundDate) {
+      setUltrasoundDate(profile.firstUltrasoundDate);
+    }
+    if (profile?.firstUltrasoundGestationalAge !== undefined) {
+      const { weeks, days } = decimalToWeeksAndDays(profile.firstUltrasoundGestationalAge);
+      setUltrasoundWeeks(weeks);
+      setUltrasoundDays(days);
     }
   }, [user, profile]);
 
