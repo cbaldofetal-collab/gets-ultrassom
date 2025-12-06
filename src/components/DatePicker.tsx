@@ -38,7 +38,8 @@ export function DatePicker({
 
   // Para web, usar input HTML nativo diretamente
   if (Platform.OS === 'web') {
-    const inputIdRef = useRef(`date-input-${Math.random().toString(36).substr(2, 9)}`);
+    const inputIdRef = useRef(`date-input-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    const containerRef = useRef<View>(null);
 
     const formatDateForInput = (date: Date | null): string => {
       if (!date) return '';
@@ -59,76 +60,112 @@ export function DatePicker({
     };
 
     useEffect(() => {
-      const input = document.getElementById(inputIdRef.current) as HTMLInputElement;
-      if (input) {
-        input.value = formatDateForInput(value);
-        input.min = getMinDate();
-        input.max = getMaxDate();
-      }
-    }, [value, minimumDate, maximumDate]);
+      // Aguardar um pouco para garantir que o DOM esteja pronto
+      const timeoutId = setTimeout(() => {
+        let input = document.getElementById(inputIdRef.current) as HTMLInputElement;
+        
+        if (!input) {
+          // Criar input se não existir
+          input = document.createElement('input');
+          input.id = inputIdRef.current;
+          input.type = 'date';
+          
+          // Estilos
+          Object.assign(input.style, {
+            width: '100%',
+            padding: '12px 16px',
+            borderRadius: '8px',
+            border: `1px solid ${theme.colors.divider}`,
+            fontSize: '16px',
+            fontFamily: 'inherit',
+            backgroundColor: theme.colors.surface,
+            color: theme.colors.text,
+            outline: 'none',
+            cursor: 'pointer',
+            boxSizing: 'border-box',
+          });
 
-    useEffect(() => {
-      const input = document.getElementById(inputIdRef.current) as HTMLInputElement;
-      if (input) {
-        const handleChange = (e: any) => {
-          const selectedDate = new Date(e.target.value);
-          if (!isNaN(selectedDate.getTime())) {
-            console.log('📅 Data selecionada:', selectedDate);
-            onChange(selectedDate);
+          // Tentar encontrar o container e adicionar o input
+          const container = containerRef.current;
+          if (container) {
+            // Tentar diferentes formas de acessar o DOM
+            const findDOMNode = (node: any): HTMLElement | null => {
+              if (node && node.nodeType === 1) return node;
+              if (node?._nativeNode) return node._nativeNode;
+              if (node?.nativeNode) return node.nativeNode;
+              if (node?._reactInternalInstance?.stateNode) return node._reactInternalInstance.stateNode;
+              if (node?._reactInternalFiber?.stateNode) return node._reactInternalFiber.stateNode;
+              return null;
+            };
+
+            const containerElement = findDOMNode(container);
+            if (containerElement) {
+              containerElement.appendChild(input);
+            } else {
+              // Fallback: adicionar ao body
+              document.body.appendChild(input);
+              input.style.position = 'absolute';
+              input.style.opacity = '0';
+              input.style.pointerEvents = 'none';
+            }
           }
-        };
+        }
 
-        const handleFocus = (e: any) => {
-          e.target.style.borderColor = theme.colors.primary;
-        };
+        // Atualizar valores
+        if (input) {
+          input.value = formatDateForInput(value);
+          input.min = getMinDate();
+          input.max = getMaxDate();
 
-        const handleBlur = (e: any) => {
-          e.target.style.borderColor = theme.colors.divider;
-        };
+          // Event listeners
+          const handleChange = (e: any) => {
+            const selectedDate = new Date(e.target.value);
+            if (!isNaN(selectedDate.getTime())) {
+              console.log('📅 Data selecionada:', selectedDate);
+              onChange(selectedDate);
+            }
+          };
 
-        input.addEventListener('change', handleChange);
-        input.addEventListener('focus', handleFocus);
-        input.addEventListener('blur', handleBlur);
+          const handleFocus = (e: any) => {
+            e.target.style.borderColor = theme.colors.primary;
+          };
 
-        return () => {
+          const handleBlur = (e: any) => {
+            e.target.style.borderColor = theme.colors.divider;
+          };
+
+          // Remover listeners antigos antes de adicionar novos
           input.removeEventListener('change', handleChange);
           input.removeEventListener('focus', handleFocus);
           input.removeEventListener('blur', handleBlur);
-        };
-      }
-    }, [onChange]);
 
-    // Usar dangerouslySetInnerHTML para renderizar o input HTML nativo
-    const inputHTML = `
-      <input
-        id="${inputIdRef.current}"
-        type="date"
-        value="${formatDateForInput(value)}"
-        min="${getMinDate()}"
-        max="${getMaxDate()}"
-        placeholder="${placeholder}"
-        style="
-          width: 100%;
-          padding: 12px 16px;
-          border-radius: 8px;
-          border: 1px solid ${theme.colors.divider};
-          font-size: 16px;
-          font-family: inherit;
-          background-color: ${theme.colors.surface};
-          color: ${theme.colors.text};
-          outline: none;
-          cursor: pointer;
-          box-sizing: border-box;
-        "
-      />
-    `;
+          input.addEventListener('change', handleChange);
+          input.addEventListener('focus', handleFocus);
+          input.addEventListener('blur', handleBlur);
+        }
+      }, 50);
+
+      return () => {
+        clearTimeout(timeoutId);
+      };
+    }, [value, minimumDate, maximumDate, onChange]);
 
     return (
       <View style={styles.container}>
         <Text style={styles.label}>{label}</Text>
         <View
-          dangerouslySetInnerHTML={{ __html: inputHTML }}
-          style={{ width: '100%' }}
+          ref={containerRef}
+          style={{
+            width: '100%',
+            minHeight: 48,
+            backgroundColor: theme.colors.surface,
+            borderRadius: theme.borderRadius.md,
+            borderWidth: 1,
+            borderColor: theme.colors.divider,
+            padding: theme.spacing.md,
+            justifyContent: 'center',
+            overflow: 'hidden',
+          }}
         />
       </View>
     );
