@@ -107,9 +107,8 @@ export function GestationalAgeInput({
             accessibilityLabel="Dias da idade gestacional"
             selectTextOnFocus={true}
             clearButtonMode="never"
-            onFocus={(e) => {
+            onFocus={() => {
               console.log('📝 Campo de dias focado');
-              e.target.select?.();
             }}
             onBlur={() => {
               console.log('📝 Campo de dias desfocado, valor atual:', days);
