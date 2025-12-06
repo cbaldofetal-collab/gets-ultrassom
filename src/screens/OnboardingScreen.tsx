@@ -108,13 +108,15 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       // Se há erros, mostrar e não avançar
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
-        // Mostrar alert para garantir feedback
+        // Mostrar alert para garantir feedback (apenas em mobile)
         const errorMessages = Object.values(newErrors).filter(Boolean);
         if (errorMessages.length > 0) {
-          Alert.alert('Atenção', errorMessages.join('\n'));
-        }
-        if (Platform.OS === 'web') {
-          console.error('Erros de validação:', newErrors);
+          if (Platform.OS !== 'web') {
+            Alert.alert('Atenção', errorMessages.join('\n'));
+          } else {
+            // No web, apenas log no console
+            console.error('❌ Erros de validação:', errorMessages);
+          }
         }
         return;
       }
