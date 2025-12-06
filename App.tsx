@@ -33,11 +33,16 @@ export default function App() {
   };
 
   const handleOnboardingComplete = async () => {
+    console.log('🎉 handleOnboardingComplete chamado no App.tsx');
     try {
+      console.log('💾 Salvando status do onboarding...');
       await setOnboardingCompleted();
+      console.log('✅ Onboarding marcado como completo');
+      console.log('🔄 Atualizando showOnboarding para false...');
       setShowOnboarding(false);
+      console.log('✅ showOnboarding atualizado');
     } catch (error) {
-      console.error('Erro ao completar onboarding:', error);
+      console.error('❌ Erro ao completar onboarding:', error);
     }
   };
 
