@@ -78,7 +78,9 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
   }, [password]);
 
   const handleNext = () => {
+    console.log('🔵 handleNext chamado, step atual:', step);
     if (step === 1) {
+      console.log('📝 Validando dados do step 1:', { name, email, password: password ? '***' : '' });
       const newErrors: { name?: string; email?: string; password?: string } = {};
       
       // Validar nome
@@ -106,7 +108,11 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       // Se há erros, mostrar e não avançar
       if (Object.keys(newErrors).length > 0) {
         setErrors(newErrors);
-        // Também mostrar alert para garantir feedback
+        // Mostrar alert para garantir feedback
+        const errorMessages = Object.values(newErrors).filter(Boolean);
+        if (errorMessages.length > 0) {
+          Alert.alert('Atenção', errorMessages.join('\n'));
+        }
         if (Platform.OS === 'web') {
           console.error('Erros de validação:', newErrors);
         }
@@ -115,8 +121,14 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       
       // Limpar erros e avançar
       setErrors({});
-      console.log('Validações passadas, avançando para step 2');
-      setStep(2);
+      console.log('✅ Validações passadas, avançando para step 2');
+      console.log('Dados:', { name, email, password: '***' });
+      
+      // Usar setTimeout para garantir que o estado seja atualizado
+      setTimeout(() => {
+        setStep(2);
+        console.log('Step atualizado para 2');
+      }, 0);
     } else if (step === 2) {
       // Validar dados gestacionais
       if (inputMethod === 'lmp' && !lmpDate) {
