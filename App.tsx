@@ -13,6 +13,7 @@ import { ErrorBoundary } from './src/components';
 
 export default function App() {
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [forceUpdate, setForceUpdate] = useState(0);
   const loadUser = useUserStore((state) => state.loadUser);
   const loadProfile = usePregnancyStore((state) => state.loadProfile);
 
@@ -43,22 +44,26 @@ export default function App() {
       
       // Forçar atualização do estado
       setShowOnboarding(false);
+      setForceUpdate(prev => prev + 1);
       console.log('✅ setShowOnboarding(false) chamado');
       
       // Forçar múltiplas atualizações para garantir
       setTimeout(() => {
         console.log('🔄 Forçando atualização 1...');
         setShowOnboarding(false);
+        setForceUpdate(prev => prev + 1);
       }, 50);
       
       setTimeout(() => {
         console.log('🔄 Forçando atualização 2...');
         setShowOnboarding(false);
+        setForceUpdate(prev => prev + 1);
       }, 100);
       
       setTimeout(() => {
         console.log('🔄 Forçando atualização 3...');
         setShowOnboarding(false);
+        setForceUpdate(prev => prev + 1);
         console.log('📊 showOnboarding após timeouts:', showOnboarding);
       }, 200);
     } catch (error) {
@@ -82,14 +87,19 @@ export default function App() {
     );
   }
 
+  // Log do estado atual para debug
+  useEffect(() => {
+    console.log('📊 App renderizado - showOnboarding:', showOnboarding, 'forceUpdate:', forceUpdate);
+  }, [showOnboarding, forceUpdate]);
+
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={styles.container}>
         <SafeAreaProvider>
           {showOnboarding ? (
-            <OnboardingScreen onComplete={handleOnboardingComplete} />
+            <OnboardingScreen onComplete={handleOnboardingComplete} key={`onboarding-${forceUpdate}`} />
           ) : (
-            <NavigationContainer>
+            <NavigationContainer key={`nav-${forceUpdate}`}>
               <AppNavigator />
             </NavigationContainer>
           )}
