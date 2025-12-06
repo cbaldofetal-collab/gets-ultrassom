@@ -38,7 +38,7 @@ export function DatePicker({
 
   // Para web, usar input HTML nativo diretamente
   if (Platform.OS === 'web') {
-    const containerRef = useRef<any>(null);
+    const inputId = `date-input-${Math.random().toString(36).substr(2, 9)}`;
     const inputRef = useRef<HTMLInputElement | null>(null);
 
     const formatDateForInput = (date: Date | null): string => {
@@ -60,127 +60,72 @@ export function DatePicker({
     };
 
     useEffect(() => {
-      // Aguardar um pouco para garantir que o DOM esteja pronto
-      const timeoutId = setTimeout(() => {
-        if (!containerRef.current) {
-          console.warn('DatePicker: containerRef não está disponível');
-          return;
-        }
+      const input = document.getElementById(inputId) as HTMLInputElement;
+      if (input) {
+        input.value = formatDateForInput(value);
+        input.min = getMinDate();
+        input.max = getMaxDate();
+        inputRef.current = input;
+      }
+    }, [value, minimumDate, maximumDate]);
 
-        // Obter o elemento DOM do container usando diferentes métodos
-        const findDOMNode = (node: any): HTMLElement | null => {
-          // Tentar diferentes formas de acessar o DOM nativo
-          if (node && node.nodeType === 1) return node;
-          if (node?._nativeNode) return node._nativeNode;
-          if (node?.nativeNode) return node.nativeNode;
-          if (node?._reactInternalInstance?.stateNode) return node._reactInternalInstance.stateNode;
-          if (node?._reactInternalFiber?.stateNode) return node._reactInternalFiber.stateNode;
-          
-          // Tentar usar findNodeHandle do React Native
-          try {
-            const { findNodeHandle } = require('react-native');
-            const handle = findNodeHandle(node);
-            if (handle) {
-              const element = document.querySelector(`[data-reactroot]`)?.querySelector(`[data-reactid="${handle}"]`);
-              if (element) return element as HTMLElement;
-            }
-          } catch (e) {
-            // Ignorar erro
-          }
-          
-          return null;
-        };
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedDate = new Date(e.target.value);
+      if (!isNaN(selectedDate.getTime())) {
+        console.log('📅 Data selecionada:', selectedDate);
+        onChange(selectedDate);
+      }
+    };
 
-        const containerElement = findDOMNode(containerRef.current);
-        if (!containerElement) {
-          console.warn('DatePicker: não foi possível encontrar o elemento DOM do container');
-          return;
-        }
-
-        // Criar ou obter input
-        let inputElement = inputRef.current;
-        if (!inputElement) {
-          inputElement = document.createElement('input');
-          inputElement.type = 'date';
-          inputRef.current = inputElement;
-
-          // Estilos
-          Object.assign(inputElement.style, {
-            width: '100%',
-            padding: '12px 16px',
-            borderRadius: '8px',
-            border: `1px solid ${theme.colors.divider}`,
-            fontSize: '16px',
-            fontFamily: 'inherit',
-            backgroundColor: theme.colors.surface,
-            color: theme.colors.text,
-            outline: 'none',
-            cursor: 'pointer',
-            boxSizing: 'border-box',
-          });
-
-          // Event listeners
-          const handleChange = (e: any) => {
-            const selectedDate = new Date(e.target.value);
-            if (!isNaN(selectedDate.getTime())) {
-              onChange(selectedDate);
-            }
-          };
-
-          const handleFocus = () => {
-            if (inputElement) {
-              inputElement.style.borderColor = theme.colors.primary;
-            }
-          };
-
-          const handleBlur = () => {
-            if (inputElement) {
-              inputElement.style.borderColor = theme.colors.divider;
-            }
-          };
-
-          inputElement.addEventListener('change', handleChange);
-          inputElement.addEventListener('focus', handleFocus);
-          inputElement.addEventListener('blur', handleBlur);
-
-          // Adicionar ao container
-          try {
-            containerElement.appendChild(inputElement);
-          } catch (e) {
-            console.error('DatePicker: erro ao adicionar input ao container:', e);
-          }
-        }
-
-        // Atualizar valores
-        if (inputElement) {
-          inputElement.value = formatDateForInput(value);
-          inputElement.min = getMinDate();
-          inputElement.max = getMaxDate();
-        }
-      }, 100);
-
-      return () => {
-        clearTimeout(timeoutId);
-      };
-    }, [value, minimumDate, maximumDate, onChange]);
+    // Usar dangerouslySetInnerHTML para renderizar o input HTML nativo
+    const inputHTML = `
+      <input
+        id="${inputId}"
+        type="date"
+        value="${formatDateForInput(value)}"
+        min="${getMinDate()}"
+        max="${getMaxDate()}"
+        placeholder="${placeholder}"
+        style="
+          width: 100%;
+          padding: 12px 16px;
+          border-radius: 8px;
+          border: 1px solid ${theme.colors.divider};
+          font-size: 16px;
+          font-family: inherit;
+          background-color: ${theme.colors.surface};
+          color: ${theme.colors.text};
+          outline: none;
+          cursor: pointer;
+          box-sizing: border-box;
+        "
+      />
+    `;
 
     return (
       <View style={styles.container}>
         <Text style={styles.label}>{label}</Text>
         <View
-          ref={containerRef}
-          style={{
-            width: '100%',
-            minHeight: 48,
-            backgroundColor: theme.colors.surface,
-            borderRadius: theme.borderRadius.md,
-            borderWidth: 1,
-            borderColor: theme.colors.divider,
-            padding: theme.spacing.md,
-            justifyContent: 'center',
-            overflow: 'hidden',
-          }}
+          dangerouslySetInnerHTML={{ __html: inputHTML }}
+          style={{ width: '100%' }}
         />
+        {useEffect(() => {
+          const input = document.getElementById(inputId) as HTMLInputElement;
+          if (input) {
+            input.addEventListener('change', (e: any) => handleChange(e));
+            input.addEventListener('focus', (e: any) => {
+              e.target.style.borderColor = theme.colors.primary;
+            });
+            input.addEventListener('blur', (e: any) => {
+              e.target.style.borderColor = theme.colors.divider;
+            });
+            return () => {
+              input.removeEventListener('change', () => {});
+              input.removeEventListener('focus', () => {});
+              input.removeEventListener('blur', () => {});
+            };
+          }
+        }, [])}
       </View>
     );
   }
