@@ -27,6 +27,16 @@ export function GestationalAgeInput({
     setDays(initialDays.toString());
   }, [initialWeeks, initialDays]);
 
+  // Forçar atualização quando os valores mudarem externamente
+  useEffect(() => {
+    if (initialWeeks.toString() !== weeks) {
+      setWeeks(initialWeeks.toString());
+    }
+    if (initialDays.toString() !== days) {
+      setDays(initialDays.toString());
+    }
+  }, [initialWeeks, initialDays, weeks, days]);
+
   const handleWeeksChange = (text: string) => {
     const value = text.replace(/[^0-9]/g, '');
     setWeeks(value);
@@ -37,14 +47,30 @@ export function GestationalAgeInput({
 
   const handleDaysChange = (text: string) => {
     console.log('📝 handleDaysChange chamado com:', text);
+    // Permitir string vazia temporariamente para permitir apagar
+    if (text === '') {
+      setDays('');
+      const weeksNum = parseInt(weeks, 10) || 0;
+      onChange(weeksNum, 0);
+      return;
+    }
+    
     const value = text.replace(/[^0-9]/g, '');
+    if (value === '') {
+      setDays('');
+      const weeksNum = parseInt(weeks, 10) || 0;
+      onChange(weeksNum, 0);
+      return;
+    }
+    
     let daysValue = parseInt(value, 10) || 0;
     // Limitar dias entre 0 e 6
     if (daysValue > 6) {
       daysValue = 6;
     }
     console.log('📝 Dias processados:', daysValue);
-    setDays(daysValue.toString());
+    const daysString = daysValue.toString();
+    setDays(daysString);
     const weeksNum = parseInt(weeks, 10) || 0;
     console.log('📝 Chamando onChange com:', weeksNum, 'semanas e', daysValue, 'dias');
     onChange(weeksNum, daysValue);
@@ -77,6 +103,8 @@ export function GestationalAgeInput({
             autoComplete="off"
             autoCorrect={false}
             accessibilityLabel="Dias da idade gestacional"
+            selectTextOnFocus={false}
+            clearButtonMode="never"
           />
           <Text style={styles.inputLabel}>dias</Text>
         </View>
