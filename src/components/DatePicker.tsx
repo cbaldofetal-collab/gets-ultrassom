@@ -38,8 +38,7 @@ export function DatePicker({
 
   // Para web, usar input HTML nativo diretamente
   if (Platform.OS === 'web') {
-    const inputId = `date-input-${Math.random().toString(36).substr(2, 9)}`;
-    const inputRef = useRef<HTMLInputElement | null>(null);
+    const inputIdRef = useRef(`date-input-${Math.random().toString(36).substr(2, 9)}`);
 
     const formatDateForInput = (date: Date | null): string => {
       if (!date) return '';
@@ -60,27 +59,49 @@ export function DatePicker({
     };
 
     useEffect(() => {
-      const input = document.getElementById(inputId) as HTMLInputElement;
+      const input = document.getElementById(inputIdRef.current) as HTMLInputElement;
       if (input) {
         input.value = formatDateForInput(value);
         input.min = getMinDate();
         input.max = getMaxDate();
-        inputRef.current = input;
       }
     }, [value, minimumDate, maximumDate]);
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const selectedDate = new Date(e.target.value);
-      if (!isNaN(selectedDate.getTime())) {
-        console.log('📅 Data selecionada:', selectedDate);
-        onChange(selectedDate);
+    useEffect(() => {
+      const input = document.getElementById(inputIdRef.current) as HTMLInputElement;
+      if (input) {
+        const handleChange = (e: any) => {
+          const selectedDate = new Date(e.target.value);
+          if (!isNaN(selectedDate.getTime())) {
+            console.log('📅 Data selecionada:', selectedDate);
+            onChange(selectedDate);
+          }
+        };
+
+        const handleFocus = (e: any) => {
+          e.target.style.borderColor = theme.colors.primary;
+        };
+
+        const handleBlur = (e: any) => {
+          e.target.style.borderColor = theme.colors.divider;
+        };
+
+        input.addEventListener('change', handleChange);
+        input.addEventListener('focus', handleFocus);
+        input.addEventListener('blur', handleBlur);
+
+        return () => {
+          input.removeEventListener('change', handleChange);
+          input.removeEventListener('focus', handleFocus);
+          input.removeEventListener('blur', handleBlur);
+        };
       }
-    };
+    }, [onChange]);
 
     // Usar dangerouslySetInnerHTML para renderizar o input HTML nativo
     const inputHTML = `
       <input
-        id="${inputId}"
+        id="${inputIdRef.current}"
         type="date"
         value="${formatDateForInput(value)}"
         min="${getMinDate()}"
@@ -109,23 +130,6 @@ export function DatePicker({
           dangerouslySetInnerHTML={{ __html: inputHTML }}
           style={{ width: '100%' }}
         />
-        {useEffect(() => {
-          const input = document.getElementById(inputId) as HTMLInputElement;
-          if (input) {
-            input.addEventListener('change', (e: any) => handleChange(e));
-            input.addEventListener('focus', (e: any) => {
-              e.target.style.borderColor = theme.colors.primary;
-            });
-            input.addEventListener('blur', (e: any) => {
-              e.target.style.borderColor = theme.colors.divider;
-            });
-            return () => {
-              input.removeEventListener('change', () => {});
-              input.removeEventListener('focus', () => {});
-              input.removeEventListener('blur', () => {});
-            };
-          }
-        }, [])}
       </View>
     );
   }
