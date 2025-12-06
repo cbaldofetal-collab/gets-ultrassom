@@ -100,13 +100,30 @@ export function DatePicker({
 
             const containerElement = findDOMNode(container);
             if (containerElement) {
-              containerElement.appendChild(input);
+              try {
+                containerElement.appendChild(input);
+              } catch (e) {
+                console.error('❌ Erro ao adicionar input ao container:', e);
+                // Fallback: adicionar ao body
+                try {
+                  document.body.appendChild(input);
+                  input.style.position = 'absolute';
+                  input.style.opacity = '0';
+                  input.style.pointerEvents = 'none';
+                } catch (e2) {
+                  console.error('❌ Erro ao adicionar input ao body:', e2);
+                }
+              }
             } else {
               // Fallback: adicionar ao body
-              document.body.appendChild(input);
-              input.style.position = 'absolute';
-              input.style.opacity = '0';
-              input.style.pointerEvents = 'none';
+              try {
+                document.body.appendChild(input);
+                input.style.position = 'absolute';
+                input.style.opacity = '0';
+                input.style.pointerEvents = 'none';
+              } catch (e) {
+                console.error('❌ Erro ao adicionar input ao body:', e);
+              }
             }
           }
         }
@@ -134,14 +151,22 @@ export function DatePicker({
             e.target.style.borderColor = theme.colors.divider;
           };
 
-          // Remover listeners antigos antes de adicionar novos
-          input.removeEventListener('change', handleChange);
-          input.removeEventListener('focus', handleFocus);
-          input.removeEventListener('blur', handleBlur);
+          // Remover listeners antigos antes de adicionar novos (usar try/catch para evitar erros)
+          try {
+            input.removeEventListener('change', handleChange);
+            input.removeEventListener('focus', handleFocus);
+            input.removeEventListener('blur', handleBlur);
+          } catch (e) {
+            // Ignorar erros ao remover listeners
+          }
 
-          input.addEventListener('change', handleChange);
-          input.addEventListener('focus', handleFocus);
-          input.addEventListener('blur', handleBlur);
+          try {
+            input.addEventListener('change', handleChange);
+            input.addEventListener('focus', handleFocus);
+            input.addEventListener('blur', handleBlur);
+          } catch (e) {
+            console.error('❌ Erro ao adicionar event listeners:', e);
+          }
         }
       }, 50);
 
