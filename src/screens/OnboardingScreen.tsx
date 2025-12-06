@@ -275,18 +275,30 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       console.log('✅ Perfil gestacional salvo');
 
       // Aguardar um pouco para garantir que o estado foi atualizado
-      console.log('⏳ Aguardando 300ms para garantir que o estado foi atualizado...');
-      await new Promise((resolve) => setTimeout(resolve, 300));
+      console.log('⏳ Aguardando 500ms para garantir que o estado foi atualizado...');
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       console.log('✅ Dados salvos, chamando onComplete...');
       console.log('📞 onComplete é uma função?', typeof onComplete);
+      console.log('📞 onComplete:', onComplete);
       
       if (typeof onComplete === 'function') {
         try {
-          onComplete();
+          console.log('📞 Chamando onComplete agora...');
+          const result = onComplete();
+          console.log('📞 Resultado de onComplete:', result);
+          
+          // Se for uma Promise, aguardar
+          if (result && typeof result.then === 'function') {
+            console.log('📞 onComplete retornou uma Promise, aguardando...');
+            await result;
+            console.log('✅ Promise de onComplete resolvida');
+          }
+          
           console.log('✅ onComplete chamado com sucesso');
         } catch (onCompleteError) {
           console.error('❌ Erro ao chamar onComplete:', onCompleteError);
+          console.error('❌ Stack trace:', onCompleteError instanceof Error ? onCompleteError.stack : 'N/A');
           throw onCompleteError;
         }
       } else {
