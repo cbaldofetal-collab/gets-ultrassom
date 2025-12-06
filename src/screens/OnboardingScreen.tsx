@@ -134,11 +134,19 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
     } else if (step === 2) {
       // Validar dados gestacionais
       if (inputMethod === 'lmp' && !lmpDate) {
-        Alert.alert('Atenção', 'Por favor, informe a data da última menstruação');
+        if (Platform.OS !== 'web') {
+          Alert.alert('Atenção', 'Por favor, informe a data da última menstruação');
+        } else {
+          console.error('❌ Erro: Por favor, informe a data da última menstruação');
+        }
         return;
       }
       if (inputMethod === 'dueDate' && !dueDate) {
-        Alert.alert('Atenção', 'Por favor, informe a data prevista do parto');
+        if (Platform.OS !== 'web') {
+          Alert.alert('Atenção', 'Por favor, informe a data prevista do parto');
+        } else {
+          console.error('❌ Erro: Por favor, informe a data prevista do parto');
+        }
         return;
       }
       // Perguntar sobre ultrassom
@@ -152,12 +160,18 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 
 
   const handleComplete = async () => {
+    console.log('🚀 handleComplete chamado');
     try {
       // Validar dados antes de salvar
       if (inputMethod === 'lmp' && lmpDate) {
         const validation = validateLMP(lmpDate);
         if (!validation.valid) {
-          Alert.alert('Data Inválida', validation.error || 'Data da última menstruação inválida');
+          const errorMsg = validation.error || 'Data da última menstruação inválida';
+          if (Platform.OS !== 'web') {
+            Alert.alert('Data Inválida', errorMsg);
+          } else {
+            console.error('❌ Erro de validação:', errorMsg);
+          }
           return;
         }
       }
@@ -165,7 +179,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       if (inputMethod === 'dueDate' && dueDate) {
         const validation = validateDueDate(dueDate);
         if (!validation.valid) {
-          Alert.alert('Data Inválida', validation.error || 'Data prevista do parto inválida');
+          const errorMsg = validation.error || 'Data prevista do parto inválida';
+          if (Platform.OS !== 'web') {
+            Alert.alert('Data Inválida', errorMsg);
+          } else {
+            console.error('❌ Erro de validação:', errorMsg);
+          }
           return;
         }
       }
@@ -174,16 +193,28 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       if (hasUltrasound && ultrasoundDate && (ultrasoundWeeks > 0 || ultrasoundDays > 0)) {
         const ageValidation = validateGestationalAge(ultrasoundWeeks, ultrasoundDays);
         if (!ageValidation.valid) {
-          Alert.alert('Idade Gestacional Inválida', ageValidation.error || 'Idade gestacional inválida');
+          const errorMsg = ageValidation.error || 'Idade gestacional inválida';
+          if (Platform.OS !== 'web') {
+            Alert.alert('Idade Gestacional Inválida', errorMsg);
+          } else {
+            console.error('❌ Erro de validação:', errorMsg);
+          }
           return;
         }
 
         const dateValidation = validateFirstUltrasoundDate(ultrasoundDate, lmpDate || undefined);
         if (!dateValidation.valid) {
-          Alert.alert('Data Inválida', dateValidation.error || 'Data do ultrassom inválida');
+          const errorMsg = dateValidation.error || 'Data do ultrassom inválida';
+          if (Platform.OS !== 'web') {
+            Alert.alert('Data Inválida', errorMsg);
+          } else {
+            console.error('❌ Erro de validação:', errorMsg);
+          }
           return;
         }
       }
+
+      console.log('✅ Validações passadas, criando usuário...');
 
       // Criar usuário (senha será armazenada como hash em produção)
       const user = {
@@ -194,6 +225,7 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         createdAt: new Date(),
       };
 
+      console.log('👤 Salvando usuário:', { ...user, password: '***' });
       await setUser(user);
 
       // Criar perfil gestacional
@@ -213,16 +245,22 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         profileData.firstUltrasoundGestationalAge = weeksAndDaysToDecimal(ultrasoundWeeks, ultrasoundDays);
       }
 
+      console.log('📋 Salvando perfil gestacional:', profileData);
       await setProfile(profileData);
 
       // Aguardar um pouco para garantir que o estado foi atualizado
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
+      console.log('✅ Dados salvos, chamando onComplete...');
       onComplete();
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Não foi possível salvar suas informações';
-      Alert.alert('Erro', errorMessage);
-      console.error('Erro ao completar onboarding:', error);
+      console.error('❌ Erro ao completar onboarding:', error);
+      if (Platform.OS !== 'web') {
+        Alert.alert('Erro', errorMessage);
+      } else {
+        console.error('Erro:', errorMessage);
+      }
     }
   };
 
