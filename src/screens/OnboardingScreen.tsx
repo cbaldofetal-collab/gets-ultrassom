@@ -190,25 +190,44 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       }
 
       // Validar ultrassom se informado
-      if (hasUltrasound && ultrasoundDate && (ultrasoundWeeks > 0 || ultrasoundDays > 0)) {
-        const ageValidation = validateGestationalAge(ultrasoundWeeks, ultrasoundDays);
-        if (!ageValidation.valid) {
-          const errorMsg = ageValidation.error || 'Idade gestacional inválida';
+      if (hasUltrasound === true) {
+        // Se selecionou "Sim", deve preencher os dados
+        if (!ultrasoundDate) {
+          const errorMsg = 'Por favor, informe a data do primeiro ultrassom';
+          console.error('❌ Erro de validação:', errorMsg);
           if (Platform.OS !== 'web') {
-            Alert.alert('Idade Gestacional Inválida', errorMsg);
-          } else {
-            console.error('❌ Erro de validação:', errorMsg);
+            Alert.alert('Atenção', errorMsg);
           }
           return;
         }
 
+        if (ultrasoundWeeks === 0 && ultrasoundDays === 0) {
+          const errorMsg = 'Por favor, informe a idade gestacional no primeiro ultrassom';
+          console.error('❌ Erro de validação:', errorMsg);
+          if (Platform.OS !== 'web') {
+            Alert.alert('Atenção', errorMsg);
+          }
+          return;
+        }
+
+        // Validar idade gestacional
+        const ageValidation = validateGestationalAge(ultrasoundWeeks, ultrasoundDays);
+        if (!ageValidation.valid) {
+          const errorMsg = ageValidation.error || 'Idade gestacional inválida';
+          console.error('❌ Erro de validação:', errorMsg);
+          if (Platform.OS !== 'web') {
+            Alert.alert('Idade Gestacional Inválida', errorMsg);
+          }
+          return;
+        }
+
+        // Validar data do ultrassom
         const dateValidation = validateFirstUltrasoundDate(ultrasoundDate, lmpDate || undefined);
         if (!dateValidation.valid) {
           const errorMsg = dateValidation.error || 'Data do ultrassom inválida';
+          console.error('❌ Erro de validação:', errorMsg);
           if (Platform.OS !== 'web') {
             Alert.alert('Data Inválida', errorMsg);
-          } else {
-            console.error('❌ Erro de validação:', errorMsg);
           }
           return;
         }
@@ -240,9 +259,15 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       }
 
       // Adicionar dados do primeiro ultrassom se informados
-      if (hasUltrasound && ultrasoundDate && (ultrasoundWeeks > 0 || ultrasoundDays > 0)) {
+      if (hasUltrasound === true && ultrasoundDate && (ultrasoundWeeks > 0 || ultrasoundDays > 0)) {
         profileData.firstUltrasoundDate = ultrasoundDate;
         profileData.firstUltrasoundGestationalAge = weeksAndDaysToDecimal(ultrasoundWeeks, ultrasoundDays);
+        console.log('🔬 Dados do ultrassom adicionados:', {
+          date: ultrasoundDate,
+          age: `${ultrasoundWeeks} semanas e ${ultrasoundDays} dias`,
+        });
+      } else {
+        console.log('ℹ️ Nenhum dado de ultrassom para salvar');
       }
 
       console.log('📋 Salvando perfil gestacional:', profileData);
