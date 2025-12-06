@@ -123,3 +123,4 @@
 
 Para desenvolvimento rápido, use **Expo Go** no seu celular. É a forma mais rápida de testar mudanças em tempo real!
 
+

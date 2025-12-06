@@ -24,3 +24,4 @@ jest.mock('expo-linking', () => ({
 // Mock do Date para testes consistentes
 global.Date.now = jest.fn(() => new Date('2024-06-15').getTime());
 
+

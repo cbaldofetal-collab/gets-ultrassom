@@ -36,3 +36,4 @@ export function getExamIconName(type: ExamType): string {
   return nameMap[type] || nameMap.outro;
 }
 
+

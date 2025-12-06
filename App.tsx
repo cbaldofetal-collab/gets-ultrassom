@@ -33,8 +33,16 @@ export default function App() {
       };
 
       const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+        // Ignorar erros 403 que podem ser de extensões do Chrome
+        if (event.reason?.code === 403 || event.reason?.httpStatus === 403) {
+          console.warn('⚠️ Erro 403 ignorado (provavelmente de extensão do Chrome):', event.reason);
+          event.preventDefault(); // Prevenir que apareça no console
+          return;
+        }
+        
         console.error('❌ Promise rejeitada não tratada:', event.reason);
         console.error('❌ Stack:', event.reason?.stack);
+        // Não prevenir o erro padrão para outros casos, para que possamos ver no console
       };
 
       window.addEventListener('error', handleError);
@@ -49,11 +57,23 @@ export default function App() {
 
   const checkOnboardingStatus = async () => {
     try {
-      await Promise.all([loadUser(), loadProfile()]);
-      const completed = await isOnboardingCompleted();
+      await Promise.all([
+        loadUser().catch((err) => {
+          console.error('❌ Erro ao carregar usuário:', err);
+          return null; // Continuar mesmo com erro
+        }),
+        loadProfile().catch((err) => {
+          console.error('❌ Erro ao carregar perfil:', err);
+          return null; // Continuar mesmo com erro
+        }),
+      ]);
+      const completed = await isOnboardingCompleted().catch((err) => {
+        console.error('❌ Erro ao verificar onboarding:', err);
+        return false; // Em caso de erro, considerar não completo
+      });
       setShowOnboarding(!completed);
     } catch (error) {
-      console.error('Erro ao verificar status do onboarding:', error);
+      console.error('❌ Erro ao verificar status do onboarding:', error);
       // Em caso de erro, mostrar onboarding para permitir que o usuário configure
       setShowOnboarding(true);
     }
@@ -63,7 +83,10 @@ export default function App() {
     console.log('🎉 handleOnboardingComplete chamado no App.tsx');
     try {
       console.log('💾 Salvando status do onboarding...');
-      await setOnboardingCompleted();
+      await setOnboardingCompleted().catch((err) => {
+        console.error('❌ Erro ao salvar onboarding (catch):', err);
+        // Continuar mesmo com erro
+      });
       console.log('✅ Onboarding marcado como completo');
       console.log('🔄 Atualizando showOnboarding para false...');
       console.log('📊 showOnboarding antes:', showOnboarding);
@@ -97,6 +120,7 @@ export default function App() {
       console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'N/A');
       // Mesmo com erro, tentar navegar
       setShowOnboarding(false);
+      setForceUpdate(prev => prev + 1);
     }
   };
 

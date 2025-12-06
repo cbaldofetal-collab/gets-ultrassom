@@ -47,3 +47,4 @@ export function AnimatedCard({ children, style, delay = 0 }: AnimatedCardProps) 
   );
 }
 
+

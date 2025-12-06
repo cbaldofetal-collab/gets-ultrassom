@@ -53,3 +53,4 @@ Ou use esta configuração no `vercel.json`:
 
 Depois de ver os logs, me envie o erro completo para eu corrigir!
 
+

@@ -70,3 +70,4 @@ gest-ultrassom/
 4. Integrar notificações push
 5. Implementar integração com WhatsApp
 
+

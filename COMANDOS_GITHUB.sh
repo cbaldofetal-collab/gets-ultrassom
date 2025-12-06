@@ -36,3 +36,4 @@ echo "  git push -u origin main"
 echo ""
 echo "✅ Depois disso, volte para a Vercel e atualize a página!"
 
+

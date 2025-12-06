@@ -63,3 +63,4 @@ export function getPasswordStrength(password: string): 'weak' | 'medium' | 'stro
   return 'strong';
 }
 
+

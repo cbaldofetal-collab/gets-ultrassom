@@ -71,3 +71,4 @@ export function getBabySize(gestationalAgeWeeks: number): BabySize {
   return { fruit: 'Melancia', fruitEmoji: '🍉', size: '51+ cm', description: 'Bebê a termo completo' };
 }
 
+

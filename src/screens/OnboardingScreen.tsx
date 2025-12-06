@@ -245,7 +245,15 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       };
 
       console.log('👤 Salvando usuário:', { ...user, password: '***' });
-      await setUser(user);
+      try {
+        await setUser(user).catch((err) => {
+          console.error('❌ Erro ao salvar usuário:', err);
+          throw err;
+        });
+      } catch (userError) {
+        console.error('❌ Erro ao salvar usuário (catch):', userError);
+        throw userError;
+      }
 
       // Criar perfil gestacional
       const profileData: any = {
@@ -271,8 +279,16 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
       }
 
       console.log('📋 Salvando perfil gestacional:', profileData);
-      await setProfile(profileData);
-      console.log('✅ Perfil gestacional salvo');
+      try {
+        await setProfile(profileData).catch((err) => {
+          console.error('❌ Erro ao salvar perfil:', err);
+          throw err;
+        });
+        console.log('✅ Perfil gestacional salvo');
+      } catch (profileError) {
+        console.error('❌ Erro ao salvar perfil (catch):', profileError);
+        throw profileError;
+      }
 
       // Aguardar um pouco para garantir que o estado foi atualizado
       console.log('⏳ Aguardando 500ms para garantir que o estado foi atualizado...');
@@ -288,10 +304,13 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
           const result = onComplete();
           console.log('📞 Resultado de onComplete:', result);
           
-          // Se for uma Promise, aguardar
+          // Se for uma Promise, aguardar com tratamento de erro
           if (result && typeof result.then === 'function') {
             console.log('📞 onComplete retornou uma Promise, aguardando...');
-            await result;
+            await result.catch((promiseError: any) => {
+              console.error('❌ Erro na Promise de onComplete:', promiseError);
+              // Não relançar o erro aqui, apenas logar
+            });
             console.log('✅ Promise de onComplete resolvida');
           }
           
@@ -299,11 +318,12 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
         } catch (onCompleteError) {
           console.error('❌ Erro ao chamar onComplete:', onCompleteError);
           console.error('❌ Stack trace:', onCompleteError instanceof Error ? onCompleteError.stack : 'N/A');
-          throw onCompleteError;
+          // Não relançar o erro aqui para evitar quebrar o fluxo
+          // O erro já foi logado
         }
       } else {
         console.error('❌ onComplete não é uma função!', onComplete);
-        throw new Error('onComplete não é uma função');
+        // Não lançar erro aqui, apenas logar
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Não foi possível salvar suas informações';

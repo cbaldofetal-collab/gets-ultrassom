@@ -82,3 +82,4 @@ Se ainda aparecer JSON após alguns segundos:
 2. Aguarde mais alguns segundos (primeira compilação demora)
 3. Verifique se há erros no terminal
 
+
