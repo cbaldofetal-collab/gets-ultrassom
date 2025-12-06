@@ -626,8 +626,10 @@ export function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
                         weeks={ultrasoundWeeks}
                         days={ultrasoundDays}
                         onChange={(weeks, days) => {
+                          console.log('🔄 GestationalAgeInput onChange:', weeks, 'semanas e', days, 'dias');
                           setUltrasoundWeeks(weeks);
                           setUltrasoundDays(days);
+                          console.log('✅ Estados atualizados:', { weeks, days });
                         }}
                       />
                     </View>

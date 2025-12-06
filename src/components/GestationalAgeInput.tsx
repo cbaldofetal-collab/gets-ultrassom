@@ -36,14 +36,17 @@ export function GestationalAgeInput({
   };
 
   const handleDaysChange = (text: string) => {
+    console.log('📝 handleDaysChange chamado com:', text);
     const value = text.replace(/[^0-9]/g, '');
     let daysValue = parseInt(value, 10) || 0;
     // Limitar dias entre 0 e 6
     if (daysValue > 6) {
       daysValue = 6;
     }
+    console.log('📝 Dias processados:', daysValue);
     setDays(daysValue.toString());
     const weeksNum = parseInt(weeks, 10) || 0;
+    console.log('📝 Chamando onChange com:', weeksNum, 'semanas e', daysValue, 'dias');
     onChange(weeksNum, daysValue);
   };
 
@@ -71,6 +74,9 @@ export function GestationalAgeInput({
             placeholder="0"
             keyboardType="numeric"
             maxLength={1}
+            autoComplete="off"
+            autoCorrect={false}
+            accessibilityLabel="Dias da idade gestacional"
           />
           <Text style={styles.inputLabel}>dias</Text>
         </View>
@@ -122,4 +128,5 @@ const styles = StyleSheet.create({
     marginHorizontal: theme.spacing.xs,
   },
 });
+
 
