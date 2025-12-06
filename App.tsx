@@ -39,10 +39,21 @@ export default function App() {
       await setOnboardingCompleted();
       console.log('✅ Onboarding marcado como completo');
       console.log('🔄 Atualizando showOnboarding para false...');
+      console.log('📊 showOnboarding antes:', showOnboarding);
       setShowOnboarding(false);
-      console.log('✅ showOnboarding atualizado');
+      console.log('✅ setShowOnboarding(false) chamado');
+      
+      // Forçar re-render se necessário
+      setTimeout(() => {
+        console.log('📊 showOnboarding após timeout:', showOnboarding);
+        if (showOnboarding !== false) {
+          console.warn('⚠️ showOnboarding ainda não é false, forçando atualização...');
+          setShowOnboarding(false);
+        }
+      }, 100);
     } catch (error) {
       console.error('❌ Erro ao completar onboarding:', error);
+      console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'N/A');
     }
   };
 
