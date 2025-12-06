@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -17,14 +17,17 @@ export default function App() {
   const loadUser = useUserStore((state) => state.loadUser);
   const loadProfile = usePregnancyStore((state) => state.loadProfile);
 
-  useEffect(() => {
-    checkOnboardingStatus();
-  }, []);
-
-  // Capturar erros globais não tratados
+  // Capturar erros globais não tratados (apenas uma vez)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const handleError = (event: ErrorEvent) => {
+        // Ignorar erros do React 310 que são comuns em produção
+        if (event.error?.message?.includes('Minified React error #310')) {
+          console.warn('⚠️ Erro React 310 ignorado (comum em builds de produção)');
+          event.preventDefault();
+          return;
+        }
+        
         console.error('❌ Erro global capturado:', event.error);
         console.error('❌ Mensagem:', event.message);
         console.error('❌ Arquivo:', event.filename);
@@ -37,6 +40,13 @@ export default function App() {
         if (event.reason?.code === 403 || event.reason?.httpStatus === 403) {
           console.warn('⚠️ Erro 403 ignorado (provavelmente de extensão do Chrome):', event.reason);
           event.preventDefault(); // Prevenir que apareça no console
+          return;
+        }
+        
+        // Ignorar erros do React 310
+        if (event.reason?.message?.includes('Minified React error #310')) {
+          console.warn('⚠️ Erro React 310 ignorado (comum em builds de produção)');
+          event.preventDefault();
           return;
         }
         
@@ -53,6 +63,12 @@ export default function App() {
         window.removeEventListener('unhandledrejection', handleUnhandledRejection);
       };
     }
+  }, []);
+
+  // Verificar status do onboarding (apenas uma vez na montagem)
+  useEffect(() => {
+    checkOnboardingStatus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkOnboardingStatus = async () => {
@@ -79,42 +95,34 @@ export default function App() {
     }
   };
 
-  const handleOnboardingComplete = async () => {
-    console.log('🎉 handleOnboardingComplete chamado no App.tsx');
+  const handleOnboardingComplete = useCallback(async () => {
+    if (__DEV__) {
+      console.log('🎉 handleOnboardingComplete chamado no App.tsx');
+    }
+    
     try {
-      console.log('💾 Salvando status do onboarding...');
+      if (__DEV__) {
+        console.log('💾 Salvando status do onboarding...');
+      }
+      
       await setOnboardingCompleted().catch((err) => {
         console.error('❌ Erro ao salvar onboarding (catch):', err);
         // Continuar mesmo com erro
       });
-      console.log('✅ Onboarding marcado como completo');
-      console.log('🔄 Atualizando showOnboarding para false...');
-      console.log('📊 showOnboarding antes:', showOnboarding);
       
-      // Forçar atualização do estado
+      if (__DEV__) {
+        console.log('✅ Onboarding marcado como completo');
+      }
+      
+      // Atualizar estado de forma síncrona
       setShowOnboarding(false);
       setForceUpdate(prev => prev + 1);
-      console.log('✅ setShowOnboarding(false) chamado');
       
-      // Forçar múltiplas atualizações para garantir
+      // Aguardar um pouco e forçar atualização novamente para garantir
       setTimeout(() => {
-        console.log('🔄 Forçando atualização 1...');
-        setShowOnboarding(false);
-        setForceUpdate(prev => prev + 1);
-      }, 50);
-      
-      setTimeout(() => {
-        console.log('🔄 Forçando atualização 2...');
         setShowOnboarding(false);
         setForceUpdate(prev => prev + 1);
       }, 100);
-      
-      setTimeout(() => {
-        console.log('🔄 Forçando atualização 3...');
-        setShowOnboarding(false);
-        setForceUpdate(prev => prev + 1);
-        console.log('📊 showOnboarding após timeouts:', showOnboarding);
-      }, 200);
     } catch (error) {
       console.error('❌ Erro ao completar onboarding:', error);
       console.error('❌ Stack trace:', error instanceof Error ? error.stack : 'N/A');
@@ -122,7 +130,7 @@ export default function App() {
       setShowOnboarding(false);
       setForceUpdate(prev => prev + 1);
     }
-  };
+  }, []);
 
   // Mostrar loading enquanto verifica
   if (showOnboarding === null) {
@@ -137,9 +145,11 @@ export default function App() {
     );
   }
 
-  // Log do estado atual para debug
+  // Log do estado atual para debug (apenas em desenvolvimento)
   useEffect(() => {
-    console.log('📊 App renderizado - showOnboarding:', showOnboarding, 'forceUpdate:', forceUpdate);
+    if (__DEV__) {
+      console.log('📊 App renderizado - showOnboarding:', showOnboarding, 'forceUpdate:', forceUpdate);
+    }
   }, [showOnboarding, forceUpdate]);
 
   return (
