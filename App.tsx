@@ -38,21 +38,62 @@ export default function App() {
       const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
         // Ignorar erros 403 que podem ser de extensões do Chrome
         if (event.reason?.code === 403 || event.reason?.httpStatus === 403) {
-          console.warn('⚠️ Erro 403 ignorado (provavelmente de extensão do Chrome):', event.reason);
-          event.preventDefault(); // Prevenir que apareça no console
+          event.preventDefault();
           return;
         }
         
         // Ignorar erros do React 310
         if (event.reason?.message?.includes('Minified React error #310')) {
-          console.warn('⚠️ Erro React 310 ignorado (comum em builds de produção)');
           event.preventDefault();
           return;
         }
         
-        console.error('❌ Promise rejeitada não tratada:', event.reason);
-        console.error('❌ Stack:', event.reason?.stack);
-        // Não prevenir o erro padrão para outros casos, para que possamos ver no console
+        // Verificar se o erro vem de extensões do Chrome
+        const stack = String(event.reason?.stack || '');
+        const reasonString = String(event.reason || '');
+        
+        // Ignorar erros de extensões do Chrome (content.js, background.js, etc.)
+        if (
+          stack.includes('content.js') ||
+          stack.includes('background.js') ||
+          stack.includes('extension://') ||
+          stack.includes('chrome-extension://') ||
+          reasonString.includes('chrome-extension://')
+        ) {
+          event.preventDefault();
+          return;
+        }
+        
+        // Ignorar objetos vazios ou sem propriedades úteis (geralmente de extensões)
+        if (
+          typeof event.reason === 'object' &&
+          event.reason !== null &&
+          !event.reason.message &&
+          !event.reason.stack &&
+          !event.reason.toString &&
+          Object.keys(event.reason).length === 0
+        ) {
+          event.preventDefault();
+          return;
+        }
+        
+        // Ignorar erros que não têm stack trace e não são do nosso código
+        if (!stack || (!stack.includes('AppEntry') && !stack.includes('gest-ultrassom') && !stack.includes('webpack'))) {
+          // Se não tem stack trace útil e não é do nosso código, provavelmente é de extensão
+          if (!event.reason?.message || event.reason.message === '[object Object]') {
+            event.preventDefault();
+            return;
+          }
+        }
+        
+        // Logar apenas erros relevantes do nosso código
+        if (stack.includes('AppEntry') || stack.includes('gest-ultrassom') || stack.includes('webpack')) {
+          console.error('❌ Promise rejeitada não tratada:', event.reason);
+          console.error('❌ Stack:', stack);
+        } else {
+          // Ignorar outros erros que não são do nosso código
+          event.preventDefault();
+        }
       };
 
       window.addEventListener('error', handleError);
