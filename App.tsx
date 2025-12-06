@@ -21,6 +21,32 @@ export default function App() {
     checkOnboardingStatus();
   }, []);
 
+  // Capturar erros globais não tratados
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const handleError = (event: ErrorEvent) => {
+        console.error('❌ Erro global capturado:', event.error);
+        console.error('❌ Mensagem:', event.message);
+        console.error('❌ Arquivo:', event.filename);
+        console.error('❌ Linha:', event.lineno);
+        console.error('❌ Coluna:', event.colno);
+      };
+
+      const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+        console.error('❌ Promise rejeitada não tratada:', event.reason);
+        console.error('❌ Stack:', event.reason?.stack);
+      };
+
+      window.addEventListener('error', handleError);
+      window.addEventListener('unhandledrejection', handleUnhandledRejection);
+
+      return () => {
+        window.removeEventListener('error', handleError);
+        window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+      };
+    }
+  }, []);
+
   const checkOnboardingStatus = async () => {
     try {
       await Promise.all([loadUser(), loadProfile()]);
