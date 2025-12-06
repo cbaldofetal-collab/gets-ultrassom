@@ -22,20 +22,15 @@ export function GestationalAgeInput({
   const [weeks, setWeeks] = useState<string>(initialWeeks.toString());
   const [days, setDays] = useState<string>(initialDays.toString());
 
+  // Sincronizar apenas quando os valores externos mudarem significativamente
   useEffect(() => {
-    setWeeks(initialWeeks.toString());
-    setDays(initialDays.toString());
-  }, [initialWeeks, initialDays]);
-
-  // Forçar atualização quando os valores mudarem externamente
-  useEffect(() => {
-    if (initialWeeks.toString() !== weeks) {
+    if (initialWeeks !== parseInt(weeks, 10)) {
       setWeeks(initialWeeks.toString());
     }
-    if (initialDays.toString() !== days) {
+    if (initialDays !== parseInt(days, 10)) {
       setDays(initialDays.toString());
     }
-  }, [initialWeeks, initialDays, weeks, days]);
+  }, [initialWeeks, initialDays]);
 
   const handleWeeksChange = (text: string) => {
     const value = text.replace(/[^0-9]/g, '');
@@ -46,31 +41,38 @@ export function GestationalAgeInput({
   };
 
   const handleDaysChange = (text: string) => {
-    console.log('📝 handleDaysChange chamado com:', text);
-    // Permitir string vazia temporariamente para permitir apagar
-    if (text === '') {
-      setDays('');
-      const weeksNum = parseInt(weeks, 10) || 0;
-      onChange(weeksNum, 0);
-      return;
-    }
+    console.log('📝 handleDaysChange chamado com:', text, 'tipo:', typeof text);
     
+    // Remover caracteres não numéricos
     const value = text.replace(/[^0-9]/g, '');
-    if (value === '') {
-      setDays('');
+    console.log('📝 Valor após limpeza:', value);
+    
+    // Se estiver vazio, permitir mas manter 0
+    if (value === '' || value === '0') {
+      setDays('0');
       const weeksNum = parseInt(weeks, 10) || 0;
+      console.log('📝 Chamando onChange com 0 dias');
       onChange(weeksNum, 0);
       return;
     }
     
-    let daysValue = parseInt(value, 10) || 0;
+    let daysValue = parseInt(value, 10);
+    console.log('📝 DiasValue parseado:', daysValue);
+    
     // Limitar dias entre 0 e 6
     if (daysValue > 6) {
       daysValue = 6;
+      console.log('📝 Limitado a 6 dias');
     }
-    console.log('📝 Dias processados:', daysValue);
+    
+    if (isNaN(daysValue)) {
+      daysValue = 0;
+    }
+    
+    console.log('📝 Dias finais:', daysValue);
     const daysString = daysValue.toString();
     setDays(daysString);
+    
     const weeksNum = parseInt(weeks, 10) || 0;
     console.log('📝 Chamando onChange com:', weeksNum, 'semanas e', daysValue, 'dias');
     onChange(weeksNum, daysValue);
@@ -98,13 +100,20 @@ export function GestationalAgeInput({
             value={days}
             onChangeText={handleDaysChange}
             placeholder="0"
-            keyboardType="numeric"
+            keyboardType="number-pad"
             maxLength={1}
             autoComplete="off"
             autoCorrect={false}
             accessibilityLabel="Dias da idade gestacional"
-            selectTextOnFocus={false}
+            selectTextOnFocus={true}
             clearButtonMode="never"
+            onFocus={(e) => {
+              console.log('📝 Campo de dias focado');
+              e.target.select?.();
+            }}
+            onBlur={() => {
+              console.log('📝 Campo de dias desfocado, valor atual:', days);
+            }}
           />
           <Text style={styles.inputLabel}>dias</Text>
         </View>
